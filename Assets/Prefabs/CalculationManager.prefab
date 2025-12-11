@@ -1,0 +1,175 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5697727614252051071
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1255266088754883432}
+  - component: {fileID: 4193660889241312247}
+  m_Layer: 0
+  m_Name: CalculationManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1255266088754883432
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5697727614252051071}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4193660889241312247
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5697727614252051071}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51ed8772435c54d9180d853971047269, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CalculationManager
+  sim: {fileID: 0}
+  PsFinder: {fileID: 0}
+  BezierGeometry: {fileID: 0}
+  PathKinematics: {fileID: 0}
+  VehicleKinematics: {fileID: 0}
+  A0: 0.034124
+  L1: 0.27
+  L2: 0.81
+  L3: 0.27
+  epsilon: 0.001
+  qMax: 1
+  dq: 100000
+  dt: 0
+  nBezier: 0
+  x_old:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  x_new:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  time: 0
+  x1: 0
+  y1: 0
+  x2: 0
+  y2: 0
+  theta1: 0
+  theta2: 0
+  theta3: 0
+  phi1: 0
+  phi2: 0
+  q1Index: 0
+  q2Index: 0
+  initialQ1Index: 0
+  initialS1: 0.98827
+  q1: 0
+  q2: 0
+  rx1: 0
+  ry1: 0
+  rx2: 0
+  ry2: 0
+  d1Rx1Dq11: 0
+  d1Ry1Dq11: 0
+  d2Rx1Dq12: 0
+  d2Ry1Dq12: 0
+  d3Rx1Dq13: 0
+  d3Ry1Dq13: 0
+  d4Rx1Dq14: 0
+  d4Ry1Dq14: 0
+  d1Rx2Dq21: 0
+  d1Ry2Dq21: 0
+  d2Rx2Dq22: 0
+  d2Ry2Dq22: 0
+  d3Rx2Dq23: 0
+  d3Ry2Dq23: 0
+  d4Rx2Dq24: 0
+  d4Ry2Dq24: 0
+  s1: 0
+  s2: 0
+  d1: 0
+  d1s1dt1: 0
+  d2s1dt2: 0
+  d3s1dt3: 0
+  d1s2dt1: 0
+  d2s2dt2: 0
+  d3s2dt3: 0
+  d1q1dt1: 0
+  d2q1dt2: 0
+  d3q1dt3: 0
+  d1q2dt1: 0
+  d2q2dt2: 0
+  d3q2dt3: 0
+  d1thetaT1dt1: 0
+  d2thetaT1dt2: 0
+  d3thetaT1dt3: 0
+  d1thetaT2dt1: 0
+  d2thetaT2dt2: 0
+  d3thetaT2dt3: 0
+  d1thetaP2ddt1: 0
+  d2thetaP2ddt2: 0
+  d3thetaP2ddt3: 0
+  d1q1ds11: 0
+  d2q1ds12: 0
+  d3q1ds13: 0
+  d1q2ds21: 0
+  d2q2ds22: 0
+  d3q2ds23: 0
+  d1q2ds11: 0
+  d2q2ds12: 0
+  d3q2ds13: 0
+  d1thetaT1ds11: 0
+  d2thetaT1ds12: 0
+  d3thetaT1ds13: 0
+  d1thetaT2ds21: 0
+  d2thetaT2ds22: 0
+  d3thetaT2ds23: 0
+  d1s2ds11: 0
+  d2s2ds12: 0
+  d3s2ds13: 0
+  d1thetaP2dds11: 0
+  d2thetaP2dds12: 0
+  d3thetaP2dds13: 0
+  thetaP1: 0
+  thetaP2: 0
+  thetaP3: 0
+  thetaP2d: 0
+  thetaT1: 0
+  thetaT2: 0
+  cs1: 0
+  cs2: 0
+  d1c1ds11: 0
+  d2c1ds12: 0
+  d1c2ds21: 0
+  d2c2ds22: 0
+  prevPs1Index: 0
+  prevPs2Index: 0
+  isInitialSeachedPs1: 0
+  isInitialSeachedPs2: 0
