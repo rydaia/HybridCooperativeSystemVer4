@@ -20,6 +20,8 @@ public class VehicleRobotStateData : State
 
     public float x2;
     public float y2;
+    public float x3;
+    public float y3;
 }
 
 public class VehicleRobotState
@@ -69,6 +71,8 @@ public class VehicleRobotState
         SetTheta3(0.0f);
         SetX2(-(l1+l2));
         SetY2(0.0f);
+        SetX2(-(l1 + l2/2f));
+        SetY2(0.0f);
 
         Debug.Log($"Initital vehicle.x1, vehicle.y1:{GetX1()}, {GetY1()}");
 
@@ -103,7 +107,6 @@ public class VehicleRobotState
         SetU3(vehicle.GetU3());
         SetU4(vehicle.GetU4());
 
-
         runge.UpdateStateRungeKutta(dt);
 
         float maxPhi1 = 0.610865f; // 35度
@@ -134,6 +137,12 @@ public class VehicleRobotState
         SetX2(x2); 
         SetY2(y2); 
 
+        float x3 = x1 - (l2 / 2f) * Mathf.Cos(theta2);
+        float y3 = y1 - (l2 / 2f) * Mathf.Sin(theta2);
+
+        SetX3(x3); 
+        SetY3(y3); 
+
         runge.CommitStep();
     }
 
@@ -162,6 +171,9 @@ public class VehicleRobotState
     public void SetX2(float v) { current.x2 = v; }
     public void SetY2(float v) { current.y2 = v; }
 
+    public void SetX3(float v) { current.x3 = v; }
+    public void SetY3(float v) { current.y3 = v; }
+
     public void SetU1(float v) { current.u1 = v; }
     public void SetU2(float v) { current.u2 = v; }
     public void SetU3(float v) { current.u3 = v; }
@@ -181,12 +193,13 @@ public class VehicleRobotState
     public float GetX2() => current.x2;
     public float GetY2() => current.y2;
 
+    public float GetX3() => current.x3;
+    public float GetY3() => current.y3;
+
     public float GetU1() => current.u1;
     public float GetU2() => current.u2;
     public float GetU3() => current.u3;
     public float GetU4() => current.u4;
-
-
 
     public Vector2 GetPosition()
     {
