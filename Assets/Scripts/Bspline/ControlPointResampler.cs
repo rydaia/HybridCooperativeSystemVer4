@@ -13,14 +13,18 @@ public class ControlPointResampler
     private NativeArray<float> S;          // 累積距離
     private NativeArray<float2> resampled; // 出力
 
-    public void Initialize(float smax_past, float smax_future, float ds = 0.01f)
+    public void Initialize(float smax_past)
     {
-        this.ds = ds;
-        float totalS = smax_past + smax_future;
+        // float ds = 0.01f;
+        this.ds = 0.01f;
+        // float totalS = smax_past + smax_future;
+        float totalS = smax_past;
 
         Nresample = Mathf.FloorToInt(totalS / ds) + 1;
 
         resampled = new NativeArray<float2>(Nresample, Allocator.Persistent);
+
+        Debug.Log($"InitializeResample complete. Length={resampled.Length}");
     }
 
     public NativeArray<float2> ResampleByDistance(NativeArray<float2> input)

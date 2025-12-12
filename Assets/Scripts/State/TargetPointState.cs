@@ -39,6 +39,8 @@ public class TargetPointState
     private TargetPointMode currentMode;     // 現在のモード
     private TargetPointMode prevMode;
 
+    private float prevTotalS;
+
     // コントラスタ
     // クラスが new された瞬間に 最初に一度だけ実行される特別な関数
     public TargetPointState(TargetPointDynamics dyn) 
@@ -51,15 +53,18 @@ public class TargetPointState
     public void Initialize()
     {
 
+        prevTotalS = 0.0f;
+
         // current.t = 0.0f;
         // current.x = -0.75f;
         // current.y = -0.7f;
         // current.t = 0.0f;
-        current.s = 0.0f;
-        current.t = 0.0f;
-        current.x = 0.0f; // 12.000736 - 9.527901
-        current.y = 0.0f;
 
+        setX(0.0f);
+        setY(0.0f);
+        setTheta(0.0f);
+        setV1(0.0f);
+        setV2(0.0f);
 
         runge = new RungeKutta(DIM, new Func<float[], float>[] {
             (x) => dynamics.f0(current),
@@ -79,6 +84,9 @@ public class TargetPointState
     public void updateTargetPointState(float dt)
     {
         // 入力は current.v1 / current.v2 にすでにセットされている
+
+        // 積分前に現在のSを前回のSとして保存
+        prevTotalS = getS();
 
         runge.UpdateStateRungeKutta(dt);
 
@@ -183,6 +191,9 @@ public class TargetPointState
     public float getTheta() => current.theta;
     public float getV1() => current.v1;
     public float getV2() => current.v2;
+
+    public float GetPrevTotalS() => prevTotalS;
+
 
     public Vector2 GetPosition()
     {

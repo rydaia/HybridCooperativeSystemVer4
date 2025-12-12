@@ -7,14 +7,14 @@ using Unity.Mathematics;
 public class TargetPointCtrl : MonoBehaviour
 {
     [Header("v1の制御")]
-    public float maxV1 = 1.0f;          // 最大前進スピード
-    public float minV1 = -1.0f;         // 最大後退スピード
-    public float driveAcceleration = 0.75f;  // 加速・減速量
+    public float maxV1;          // 最大前進スピード
+    public float minV1;         // 最大後退スピード
+    public float driveAcceleration;  // 加速・減速量
 
     [Header("v2の制御")]
-    public float maxV2 = 0.2f;          // 最大旋回スピード
-    public float minV2 = -0.2f;         // 最大旋回スピード
-    public float steerAcceleration = 0.1f;  // 加速・減速量
+    public float maxV2;          // 最大旋回スピード
+    public float minV2;         // 最大旋回スピード
+    public float steerAcceleration;  // 加速・減速量
 
     [Header("CalculationManager 参照")]
     public CalculationManager calc;
@@ -26,12 +26,21 @@ public class TargetPointCtrl : MonoBehaviour
 
     public void Initialize()
     {
-        var speedData = ReadCSV.ReadSpeedData(); // ここは float2[] を返している前提
 
-        arr = new float2[speedData.Length];
+        maxV1 = 1.2f;          // 最大前進スピード
+        minV1 = -1.2f;         // 最大後退スピード
+        driveAcceleration = 0.75f;  // 加速・減速量
 
-        for (int i = 0; i < speedData.Length; i++)
-            arr[i] = speedData[i];
+        maxV2 = 0.2f;          // 最大旋回スピード
+        minV2 = -0.2f;         // 最大旋回スピード
+        steerAcceleration = 0.1f;  // 加速・減速量
+
+        // var speedData = ReadCSV.ReadSpeedData(); // ここは float2[] を返している前提
+
+        // arr = new float2[speedData.Length];
+
+        // for (int i = 0; i < speedData.Length; i++)
+        //     arr[i] = speedData[i];
     }
 
     public void ReadInput(int i)
@@ -118,6 +127,9 @@ public class TargetPointCtrl : MonoBehaviour
 
         calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
     }
+
+    public float GetMaxSpeed() => maxV1;
+
 
 }
 

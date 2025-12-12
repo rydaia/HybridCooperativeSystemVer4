@@ -33,8 +33,8 @@ public class VehicleKinematics : MonoBehaviour
     private float L2;      // 車軸間距離の長さ[m]
     private float L3;      // 車軸間距離の長さ[m]
 
-    // public float z31;
-    // public float z32, z33;
+    public float z31;
+    public float z32, z33;
     // z32, z33;
     public float z21, z22;
 
@@ -81,8 +81,8 @@ public class VehicleKinematics : MonoBehaviour
     public float L2f1h2;
     public float L3f1h2;
     
-    // public float L1f1h3;
-    // public float L2f1h3;
+    public float L1f1h3;
+    public float L2f1h3;
     public float L3f1h3;
 
     public float Lf2L2f1h2;
@@ -722,14 +722,14 @@ public class VehicleKinematics : MonoBehaviour
 
 
         // z32
-        // L1f1h3 = (_formulaOf1MinusCs1MulD1)*_tanThetaP1;// Lie微分
+        L1f1h3 = (_formulaOf1MinusCs1MulD1)*_tanThetaP1;// Lie微分
 
 
         // z31
-        // L2f1h3 = _squaredFormulaOf1MinusCs1MulD1*_cubedSecThetaP1*
-        //         (-(_formulaOfFormulaOfCs1MulCosThetaP1DevFormulaOf1MinusCs1MulD1) + _formulaTanPhi1DevL1) - 
-        //         _cs1*(_formulaOf1MinusCs1MulD1)*_squaredTanThetaP1 - 
-        //         _d1*_tanThetaP1*_d1c1ds11;
+        L2f1h3 = _squaredFormulaOf1MinusCs1MulD1*_cubedSecThetaP1*
+                (-(_formulaOfFormulaOfCs1MulCosThetaP1DevFormulaOf1MinusCs1MulD1) + _formulaTanPhi1DevL1) - 
+                _cs1*(_formulaOf1MinusCs1MulD1)*_squaredTanThetaP1 - 
+                _d1*_tanThetaP1*_d1c1ds11;
 
 
         // 先頭車両追従に関与
@@ -794,7 +794,7 @@ public class VehicleKinematics : MonoBehaviour
 
         // 車両の制御入力w1, w3を目標点のv1, v2に対応
         w1 = targetPointState.getV1();
-        w3 = targetPointState.getV2();
+        // w3 = targetPointState.getV2();
 
         // 符号付き微分
         _thetaP2d_1 = Mathf.Sign(w1) * _d1thetaP2dds11;
@@ -809,6 +809,12 @@ public class VehicleKinematics : MonoBehaviour
 
 
         w2 = Mathf.Sign(w1)*_thetaP2_3*w1;
+
+        z33 = _d1;
+        z32 = L1f1h3;
+        z31 = L2f1h3;
+
+        w3 = p31*Mathf.Abs(w1)*z31 + p32*w1*z32 + p33*Mathf.Abs(w1)*z33;
 
     }
 

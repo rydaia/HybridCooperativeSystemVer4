@@ -60,6 +60,7 @@ public class SimulationManager : MonoBehaviour {
             "vehicle.x1", "vehicle.y1", 
             "vehicle.phi1", "vehicle.theta1", 
             "vehicle.phi2", "vehicle.theta2", "vehicle.theta3",
+            "vehicle.x2", "vehicle.y2", 
             "vehicle.u1", "vehicle.u2", "vehicle.u3",
             "u1Index", "u2Index",
             "rx1", "ry1",
@@ -69,6 +70,7 @@ public class SimulationManager : MonoBehaviour {
             "d4rx1du14", "d4ry1du14",
             "rx2", "ry2",
             "cs1", "cs2",
+            "thetaT1", "thetaT2", "thetaP2d",
         };
 
         string line1 = string.Join(",", header);

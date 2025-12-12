@@ -956,7 +956,6 @@ public class PathKinematics : MonoBehaviour
     public void SetD2thetaP2dds12(float v) { d2thetaP2dds12 = v; }
     public void SetD3thetaP2dds13(float v) { d3thetaP2dds13 = v; }
 
-
     // Getter
     public float GetCs1() => cs1;
     public float GetD1c1ds11() => d1c1ds11;
@@ -969,6 +968,7 @@ public class PathKinematics : MonoBehaviour
     public float GetThetaT1() => thetaT1;
     public float GetThetaT2() => thetaT2;
     public float GetThetaP2d() => thetaP2d;
+    
     // u1 系
     public float GetD1u1ds11() => d1u1ds11;
     public float GetD2u1ds12() => d2u1ds12;

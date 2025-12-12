@@ -242,7 +242,7 @@ public class BsplineGeometry
     public void CalculateDerivativeControlPointsJob()
     {
         // 制御点を取得
-        this.ctrl = trajectoryGenerator.resampled2Native;
+        this.ctrl = trajectoryGenerator.resampledNative;
 
         var job1 = new DerivativeCtrlJob {
             ctrl = ctrl,

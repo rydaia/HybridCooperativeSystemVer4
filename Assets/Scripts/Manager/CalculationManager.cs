@@ -41,17 +41,17 @@ public class CalculationManager : MonoBehaviour
 
 
     [Header("debug用")]
-    private float2[] debugMergedPoints;
+    // private float2[] debugMergedPoints;
     private float2[] debugResampledPoints;
-    private float2[] debugResampledPoints2;
+    // private float2[] debugResampledPoints2;
     private float2[] debugSmoothedPoints;
     private float2[] debugPastPoints;
-    private float2[] debugFuturePoints;
+    // private float2[] debugFuturePoints;
     private float2[] debugPoints;
     public int debugNp;
-    public int debugNf;
+    // public int debugNf;
     public int debugNs;
-    public int debugNd;
+    // public int debugNd;
     public int debugN;
 
     public event Action OnInitialized;
@@ -74,10 +74,12 @@ public class CalculationManager : MonoBehaviour
         public float v2; // 第一車両 ステアリング角速度
 
         public float x1, y1; // 目標点の座標
+        public float x2, y2; // 目標点の座標
         public float phi1, phi2; // 目標点の姿勢角
         public float theta1, theta2, theta3; // 目標点の姿勢角
+        public float thetaT1, thetaT2, thetaP2d; // 目標点の姿勢角
 
-        public float u1, u2, u3; // 第一車両 前進速度
+        public float u1, u2, u3, u4; // 第一車両 前進速度
 
 
         public int u1Index, u2Index;
@@ -96,13 +98,15 @@ public class CalculationManager : MonoBehaviour
 
     void Awake()
     {
+
+        vehicleRobotParms = new VehicleParameters();
+
         // TargetPointState のインスタンス生成
         targetPointDynamics = new TargetPointDynamics();
         targetPointState = new TargetPointState(targetPointDynamics);
 
-        vehicleRobotParms = new VehicleParameters();
         vehicleRobotDynamics = new VehicleRobotDynamics(vehicleRobotParms);
-        vehicleRobotState = new VehicleRobotState(vehicleRobotDynamics);
+        vehicleRobotState = new VehicleRobotState(vehicleRobotDynamics, vehicleRobotParms);
 
         // ControlPointQueue のインスタンス生成
         cpQueue = new ControlPointQueue();
@@ -176,16 +180,16 @@ public class CalculationManager : MonoBehaviour
         if(sim.enableDebugOutput)
         {
             debugNp = cpQueue.GetNp();
-            debugNf = cpQueue.GetNf();
+            // debugNf = cpQueue.GetNf();
             debugNs = cpSmooth.GetNsm();
             debugN = trajectoryGenerator.GetN();
 
-            debugMergedPoints = cpQueue.GetMergedPointsManaged();
+            // debugMergedPoints = cpQueue.GetMergedPointsManaged();
             debugResampledPoints = cpResample.GetResampledPointsManaged(trajectoryGenerator.resampledNative);
-            debugResampledPoints2 = cpResample.GetResampledPointsManaged(trajectoryGenerator.resampled2Native);
+            // debugResampledPoints2 = cpResample.GetResampledPointsManaged(trajectoryGenerator.resampled2Native);
             debugSmoothedPoints = cpSmooth.GetSmoothedPointsManaged();
             debugPastPoints   = cpQueue.GetPastPointsManaged();
-            debugFuturePoints = cpQueue.GetFuturePointsManaged();
+            // debugFuturePoints = cpQueue.GetFuturePointsManaged();
             debugPoints = bsplineGeometry.GetPointsManaged();
         }
     }
@@ -221,7 +225,7 @@ public class CalculationManager : MonoBehaviour
         //     return;
         // };
 
-        Debug.Log($"current.t:{targetPointState.getTime()}, current.s:{targetPointState.getS()}, current.x:{targetPointState.getX()}, current.s:{targetPointState.getY()}");
+        Debug.Log($"current.t:{targetPointState.getTime()}, current.s:{targetPointState.getS()}, current.v1:{targetPointState.getV1()}, current.x:{targetPointState.getX()}, current.s:{targetPointState.getY()}");
 
         // ここで入力の読み込みたい
         targetPointCtrl.ReadInput(Mathf.FloorToInt(targetPointState.getTime() / _dt)); 
@@ -232,7 +236,7 @@ public class CalculationManager : MonoBehaviour
         // TrajectoryGeneratorクラス呼び出し
         trajectoryGenerator.GenerateBSplineCurve();
 
-        // if(targetPointState.getTime() > 0.11f)
+        // if(targetPointState.getTime() > 20.01f)
         // {
         //     Debug.Log($"time:{time}");
         //     sim.StopSimulation();
@@ -275,6 +279,13 @@ public class CalculationManager : MonoBehaviour
             data.theta1 = vehicleRobotState.GetTheta1();
             data.theta2 = vehicleRobotState.GetTheta2();
             data.theta3 = vehicleRobotState.GetTheta3();
+
+            data.thetaT1 = pathKinematics.GetThetaT1();
+            data.thetaT2 = pathKinematics.GetThetaT2();
+            data.thetaP2d = pathKinematics.GetThetaP2d();
+
+            data.x2 = vehicleRobotState.GetX2();
+            data.y2 = vehicleRobotState.GetY2();
 
             data.u1 = vehicleRobotState.GetU1();
             data.u2 = vehicleRobotState.GetU2();
@@ -348,7 +359,7 @@ public class CalculationManager : MonoBehaviour
             "{24:F6},{25:F6}," +
             "{26:F6},{27:F6}," +
             "{28:F6},{29:F6}," + 
-            "{30:F6},{31:F6},{32:F6}\n",
+            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6}\n",
             d.time,
             d.s,
             d.x, d.y,
@@ -357,6 +368,7 @@ public class CalculationManager : MonoBehaviour
             d.x1, d.y1,
             d.phi1, d.theta1,
             d.phi2, d.theta2, d.theta3,
+            d.x2, d.y2,
             d.u1, d.u2, d.u3,
             d.u1Index, d.u2Index,
             d.rx1, d.ry1,
@@ -365,7 +377,8 @@ public class CalculationManager : MonoBehaviour
             d.d3rx1du13, d.d3ry1du13,
             d.d4rx1du14, d.d4ry1du14,
             d.rx2, d.ry2,
-            d.cs1, d.cs2
+            d.cs1, d.cs2,
+            d.thetaT1, d.thetaT2, d.thetaP2d
         );
     }
 
@@ -393,7 +406,8 @@ public class CalculationManager : MonoBehaviour
     {
         if(sim.enableDebugOutput)
         {
-            OutputCSV.WriteBSplineCurve(debugPastPoints, debugFuturePoints, debugMergedPoints, debugResampledPoints, debugSmoothedPoints, debugResampledPoints2, debugPoints, ds, targetPointState.getTime());
+            // OutputCSV.WriteBSplineCurve(debugPastPoints, debugFuturePoints, debugMergedPoints, debugResampledPoints, debugSmoothedPoints, debugResampledPoints2, debugPoints, ds, targetPointState.getTime());
+            OutputCSV.WriteBSplineCurve(debugPastPoints, debugSmoothedPoints, debugResampledPoints, debugPoints, ds, targetPointState.getTime());
         }
         else{
             Debug.Log("デバックモードがOFFのためファイル出力しません.");

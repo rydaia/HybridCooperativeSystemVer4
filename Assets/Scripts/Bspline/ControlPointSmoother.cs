@@ -20,7 +20,7 @@ public class ControlPointSmoother
         Nsm = totalPoints - (nw - 1) / 2;
 
         smoothedNative = new NativeArray<float2>(Nsm, Allocator.Persistent);
-        smoothedNative = ApplyMovingAverage(calc.cpQueue.GetMergedNative());
+        smoothedNative = ApplyMovingAverage(calc.cpQueue.GetPastNative());
         Debug.Log($"InitializeSmoothData complete. Length={smoothedNative.Length}");
     }
 

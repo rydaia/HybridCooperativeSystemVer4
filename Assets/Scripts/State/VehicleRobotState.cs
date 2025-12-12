@@ -16,6 +16,9 @@ public class VehicleRobotStateData : State
     public float u1;     // 前進速度
     public float u2;     // 第１車両 ステア角速度
     public float u3;     // 第２車両 ステア角速度
+
+    public float x2;
+    public float y2;
 }
 
 public class VehicleRobotState
@@ -28,24 +31,46 @@ public class VehicleRobotState
     private VehicleRobotDynamics dynamics;
     private VehicleKinematics vehicle;
     private RungeKutta runge;
+    private VehicleParameters p;
+
 
     // DIM = 微分方程式の数（x1, y1, phi1, theta1, phi2, theta2, theta3) の7つ
     private int DIM = 7;
 
     // コントラスタ
     // クラスが new された瞬間に 最初に一度だけ実行される特別な関数
-    public VehicleRobotState(VehicleRobotDynamics dyn) 
+    public VehicleRobotState(VehicleRobotDynamics dyn, VehicleParameters p) 
     {
         // ここでTargetPointStateDataクラスのインスタンス生成
         current = new VehicleRobotStateData();
 
         this.dynamics = dyn;
+        this.p = p;
     }
 
     public void Initialize(VehicleKinematics v)
     {
 
         this.vehicle = v;
+
+        float l1 = p.GetL1();
+        float l2 = p.GetL2();
+
+        Debug.Log($"l1:{l1}");
+
+        SetTime(0.0f);
+        SetX1(-l1);
+        SetY1(0.0f);
+        SetPhi1(0.0f);
+        SetTheta1(0.0f);
+        SetPhi2(0.0f);
+        SetTheta2(0.0f);
+        SetTheta3(0.0f);
+        SetX2(-(l1+l2));
+        SetY2(0.0f);
+
+        Debug.Log($"Initital vehicle.x1, vehicle.y1:{GetX1()}, {GetY1()}");
+
 
         runge = new RungeKutta(DIM, new Func<float[], float>[] {
             (x) => dynamics.f0(current),
@@ -88,6 +113,18 @@ public class VehicleRobotState
         SetTheta2(runge.x_new[6]);
         SetTheta3(runge.x_new[7]);
 
+        float x1 = GetX1();
+        float y1 = GetY1();
+
+        float l2 = p.GetL2();
+        float theta2 = GetTheta2();
+
+        float x2 = x1 - l2 * Mathf.Cos(theta2);
+        float y2 = y1 - l2 * Mathf.Sin(theta2);
+
+        SetX2(x2); 
+        SetY2(y2); 
+
         runge.CommitStep();
     }
 
@@ -106,6 +143,9 @@ public class VehicleRobotState
     public void SetTheta2(float v) { current.theta2 = v; }
     public void SetTheta3(float v) { current.theta3 = v; }
 
+    public void SetX2(float v) { current.x2 = v; }
+    public void SetY2(float v) { current.y2 = v; }
+
     // Getter
     public float GetTime() => current.t;
     public float GetX1() => current.x1;
@@ -115,6 +155,9 @@ public class VehicleRobotState
     public float GetPhi2() => current.phi2;
     public float GetTheta2() => current.theta2;
     public float GetTheta3() => current.theta3;
+
+    public float GetX2() => current.x2;
+    public float GetY2() => current.y2;
 
     public float GetU1() => current.u1;
     public float GetU2() => current.u2;
