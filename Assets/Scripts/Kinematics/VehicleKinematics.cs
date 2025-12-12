@@ -345,17 +345,22 @@ public class VehicleKinematics : MonoBehaviour
     public void CalculatethetaP1()
     {
         // Debug.Log($"vehicleRobotState.GetTheta1():{vehicleRobotState.GetTheta1()}, pathKinematics.GetThetaT1():{pathKinematics.GetThetaT1()}");
-        SetThetaP1(vehicleRobotState.GetTheta1() - pathKinematics.GetThetaT1());
+        SetThetaP1(NormalizeAngle(vehicleRobotState.GetTheta1() - pathKinematics.GetThetaT1()));
     }
 
     public void CalculatethetaP2()
     {
-        SetThetaP2(vehicleRobotState.GetTheta2() - pathKinematics.GetThetaT1());
+        SetThetaP2(NormalizeAngle(vehicleRobotState.GetTheta2() - pathKinematics.GetThetaT1()));
     }
 
     public void CalculatethetaP3()
     {
-        SetThetaP3(vehicleRobotState.GetTheta3() - pathKinematics.GetThetaT1());
+        SetThetaP3(NormalizeAngle(vehicleRobotState.GetTheta3() - pathKinematics.GetThetaT1()));
+    }
+
+    private float NormalizeAngle(float angle)
+    {
+        return Mathf.Atan2(Mathf.Sin(angle), Mathf.Cos(angle));
     }
 
     private void CalculateLie()
@@ -842,8 +847,7 @@ public class VehicleKinematics : MonoBehaviour
     public float GetU1() => u1;
     public float GetU2() => u2;
     public float GetU3() => u3;
-
-
+    public float GetU4() => u4;
 }
 
 

@@ -124,11 +124,12 @@ public class TargetPointState
             // 積分値自体に強制反映
             runge.x_new[4] = stoppedTheta + diff;
         }
-        else
-        {
-            // 通常時は正規化のみ
-            runge.x_new[4] = NormalizeAngle(theta_raw);
-        }
+        // else
+        // {
+        //     // 通常時は正規化のみ
+        //     // runge.x_new[4] = NormalizeAngle(theta_raw);
+
+        // }
 
         current.theta = runge.x_new[4];
 

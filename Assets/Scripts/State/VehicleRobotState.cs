@@ -16,6 +16,7 @@ public class VehicleRobotStateData : State
     public float u1;     // 前進速度
     public float u2;     // 第１車両 ステア角速度
     public float u3;     // 第２車両 ステア角速度
+    public float u4;     // 第２車両 ステア角速度
 
     public float x2;
     public float y2;
@@ -97,19 +98,27 @@ public class VehicleRobotState
     {
 
         // u1, u2, u3のセット
-        current.u1 = vehicle.GetU1();
-        current.u2 = vehicle.GetU2();
-        current.u3 = vehicle.GetU3();
+        SetU1(vehicle.GetU1());
+        SetU2(vehicle.GetU2());
+        SetU3(vehicle.GetU3());
+        SetU4(vehicle.GetU4());
+
 
         runge.UpdateStateRungeKutta(dt);
+
+        float maxPhi1 = 0.610865f; // 35度
+        float minPhi1 = -0.610865f; // 35度
+
+        float maxPhi2 = 0.610865f; // 35度
+        float minPhi2 = -0.610865f; // 35度        float maxPhi1 = 0.610865f; // 35度
 
         // 結果を State に反映する
         SetTime(runge.x_new[0]);
         SetX1(runge.x_new[1]); 
         SetY1(runge.x_new[2]); 
-        SetPhi1(runge.x_new[3]);
+        SetPhi1(ClampSteer(runge.x_new[3]));
         SetTheta1(runge.x_new[4]);
-        SetPhi2(runge.x_new[5]);
+        SetPhi2(ClampSteer(runge.x_new[5]));
         SetTheta2(runge.x_new[6]);
         SetTheta3(runge.x_new[7]);
 
@@ -128,10 +137,17 @@ public class VehicleRobotState
         runge.CommitStep();
     }
 
-    private float NormalizeAngle(float angle)
+    float ClampSteer(float phi)
     {
-        return math.atan2(math.sin(angle), math.cos(angle));
+        const float MAX = 35f * Mathf.Deg2Rad;  
+        return Mathf.Clamp(phi, -MAX, +MAX);
     }
+
+
+    // private float NormalizeAngle(float angle)
+    // {
+    //     return math.atan2(math.sin(angle), math.cos(angle));
+    // }
 
     // Setter
     public void SetTime(float v) { current.t = v; }
@@ -145,6 +161,12 @@ public class VehicleRobotState
 
     public void SetX2(float v) { current.x2 = v; }
     public void SetY2(float v) { current.y2 = v; }
+
+    public void SetU1(float v) { current.u1 = v; }
+    public void SetU2(float v) { current.u2 = v; }
+    public void SetU3(float v) { current.u3 = v; }
+    public void SetU4(float v) { current.u4 = v; }
+
 
     // Getter
     public float GetTime() => current.t;
@@ -162,6 +184,8 @@ public class VehicleRobotState
     public float GetU1() => current.u1;
     public float GetU2() => current.u2;
     public float GetU3() => current.u3;
+    public float GetU4() => current.u4;
+
 
 
     public Vector2 GetPosition()

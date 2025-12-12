@@ -361,11 +361,42 @@ public class PathKinematics : MonoBehaviour
         SetThetaT2(_thetaT2);
     }
 
+    // public void CalculateThetaP2d()
+    // {
+    //     float _thetaP2d = Mathf.Atan2(_ry1 - _ry2, _rx1 - _rx2) - thetaT1;
+
+    //     SetThetaP2d(_thetaP2d);
+    // }
+
+    // public void CalculateThetaP2d()
+    // {
+    //     float theta = Mathf.Atan2(_ry1 - _ry2, _rx1 - _rx2);
+    //     float diff = theta - thetaT1;
+
+    //     Debug.Log($"Atan2(theta):{theta}, diff:{diff}");
+    //     diff = NormalizeAngle(diff);
+    //     Debug.Log($"Normalize diff:{diff}");
+
+    //     SetThetaP2d(diff);
+    // }
+
     public void CalculateThetaP2d()
     {
-        float _thetaP2d = Mathf.Atan2(_ry1 - _ry2, _rx1 - _rx2) - thetaT1;
+        float theta12 = Mathf.Atan2(_ry1 - _ry2, _rx1 - _rx2);
 
-        SetThetaP2d(_thetaP2d);
+        float theta1  = NormalizeAngle(thetaT1);   // 車体角の正規化（重要）
+        float diff    = NormalizeAngle(theta12 - theta1);
+
+        SetThetaP2d(diff);
+
+        // Debug.Log($"theta12={theta12}, theta1={theta1}, diff={diff}");
+    }
+
+
+    float NormalizeAngle(float angle)
+    {
+        angle = Mathf.Repeat(angle + Mathf.PI, 2f * Mathf.PI) - Mathf.PI;
+        return angle;
     }
 
     // u1のs1の1階微分
@@ -968,7 +999,7 @@ public class PathKinematics : MonoBehaviour
     public float GetThetaT1() => thetaT1;
     public float GetThetaT2() => thetaT2;
     public float GetThetaP2d() => thetaP2d;
-    
+
     // u1 系
     public float GetD1u1ds11() => d1u1ds11;
     public float GetD2u1ds12() => d2u1ds12;

@@ -61,7 +61,7 @@ public class SimulationManager : MonoBehaviour {
             "vehicle.phi1", "vehicle.theta1", 
             "vehicle.phi2", "vehicle.theta2", "vehicle.theta3",
             "vehicle.x2", "vehicle.y2", 
-            "vehicle.u1", "vehicle.u2", "vehicle.u3",
+            "vehicle.u1", "vehicle.u2", "vehicle.u3", "vehicle.u4",
             "u1Index", "u2Index",
             "rx1", "ry1",
             "d1rx1du11", "d1ry1du11",

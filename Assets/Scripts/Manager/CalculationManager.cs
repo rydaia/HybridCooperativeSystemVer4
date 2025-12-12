@@ -290,6 +290,7 @@ public class CalculationManager : MonoBehaviour
             data.u1 = vehicleRobotState.GetU1();
             data.u2 = vehicleRobotState.GetU2();
             data.u3 = vehicleRobotState.GetU3();
+            data.u4 = vehicleRobotState.GetU4();
 
             data.u1Index = psFinder.GetU1Index();
             data.u2Index = psFinder.GetU2Index();
@@ -359,7 +360,7 @@ public class CalculationManager : MonoBehaviour
             "{24:F6},{25:F6}," +
             "{26:F6},{27:F6}," +
             "{28:F6},{29:F6}," + 
-            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6}\n",
+            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6},{38:F6}\n",
             d.time,
             d.s,
             d.x, d.y,
@@ -369,7 +370,7 @@ public class CalculationManager : MonoBehaviour
             d.phi1, d.theta1,
             d.phi2, d.theta2, d.theta3,
             d.x2, d.y2,
-            d.u1, d.u2, d.u3,
+            d.u1, d.u2, d.u3, d.u4,
             d.u1Index, d.u2Index,
             d.rx1, d.ry1,
             d.d1rx1du11, d.d1ry1du11,
