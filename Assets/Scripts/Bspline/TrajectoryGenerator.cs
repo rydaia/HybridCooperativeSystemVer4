@@ -50,15 +50,14 @@ public class TrajectoryGenerator
 
 
     public float smax_past; 
-    // public float smax_future; 
+    public float smax_future; 
 
     public int Np;
-    // public int Nf;
+    public int Nf;
     public int Nctrl;
     public int Nsm;
     public int N;
     public int k;
-
 
     public float ds, dt;
 
@@ -76,13 +75,13 @@ public class TrajectoryGenerator
 
         k = 5;
 
-        smax_past = 10.0f; // [m]
-        // smax_future = 2.0f; // [m]
+        smax_past = 8.0f; // [m]
+        smax_future = 2.0f; // [m]
 
         Np = Mathf.FloorToInt(smax_past / 0.01f) + 1;
-        // Nf = Mathf.FloorToInt(smax_future / 0.01f);
+        Nf = Mathf.FloorToInt(smax_future / 0.01f);
 
-        calc.cpQueue.Initialize(Np, dt, calc);
+        calc.cpQueue.Initialize(dt, calc);
         calc.cpResample.Initialize(smax_past);
 
         // 再サンプリングした際のサイズ
@@ -234,6 +233,16 @@ public class TrajectoryGenerator
     public int GetN()
     {
         return N;
+    }
+
+    public int GetNp()
+    {
+        return Np;
+    }
+
+    public int GetNf()
+    {
+        return Nf;
     }
 
     public int GetK()

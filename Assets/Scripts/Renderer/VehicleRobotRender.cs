@@ -147,19 +147,21 @@ public class VehicleRobotRenderer : MonoBehaviour
         float theta2 = calc.vehicleRobotState.GetTheta2();
         float theta3 = calc.vehicleRobotState.GetTheta3();
 
-        Vector3 offsetLocalForFV = new Vector3(0.25f, 0f, 0f);
-        Vector3 offsetLocalForSV = new Vector3(-0.25f, 0f, 0f);
-
         firstVehicleSpeed  = calc.vehicleRobotState.GetU1();
         secondVehicleSpeed = calc.vehicleRobotState.GetU4(); // ここは本当に u4 ？（u1,u2,u3 だけなら見直し推奨）
 
         // 先頭車両
+        Vector3 offsetLocalForFV = new Vector3(0.25f, 0f, 0f);
+
         float firstVehicleDeg  = -theta1 * Mathf.Rad2Deg;
         firstVehicleRotation  = Quaternion.Euler(0f, firstVehicleDeg, 0f);
         Vector3 fvBase = new Vector3(x1, 0f, y1) * scale;
         firstVehiclePosition  = fvBase + firstVehicleRotation  * (offsetLocalForFV * scale);
         
+
         // 後方車両
+        Vector3 offsetLocalForSV = new Vector3(-0.25f, 0f, 0f);
+
         float secondVehicleDeg = -theta3 * Mathf.Rad2Deg;
         secondVehicleRotation = Quaternion.Euler(0f, secondVehicleDeg, 0f);
         Vector3 svBase = new Vector3(x2, 0f, y2) * scale;

@@ -918,7 +918,7 @@ LineRenderer:
       atime6: 0
       atime7: 0
       m_Mode: 0
-      m_ColorSpace: -1
+      m_ColorSpace: 0
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
     numCornerVertices: 0
@@ -1923,14 +1923,6 @@ PrefabInstance:
       propertyPath: targetRenderer
       value: 
       objectReference: {fileID: 542963555}
-    - target: {fileID: 5528350558512797217, guid: b1d244ec648b5427aba3e18833854d1c, type: 3}
-      propertyPath: target1Renderer
-      value: 
-      objectReference: {fileID: 542963555}
-    - target: {fileID: 5528350558512797217, guid: b1d244ec648b5427aba3e18833854d1c, type: 3}
-      propertyPath: target2Renderer
-      value: 
-      objectReference: {fileID: 1042164004}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

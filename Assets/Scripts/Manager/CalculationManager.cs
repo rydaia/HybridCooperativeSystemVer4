@@ -143,7 +143,7 @@ public class CalculationManager : MonoBehaviour
 
         targetPointCtrl.Initialize();
 
-        targetPointState.Initialize();
+        targetPointState.Initialize(targetPointCtrl, vehicleRobotState);
         vehicleRobotState.Initialize(vehicleKinematics);
 
         trajectoryGenerator.Initialize();
@@ -225,7 +225,7 @@ public class CalculationManager : MonoBehaviour
         //     return;
         // };
 
-        Debug.Log($"current.t:{targetPointState.getTime()}, current.s:{targetPointState.getS()}, current.v1:{targetPointState.getV1()}, current.x:{targetPointState.getX()}, current.s:{targetPointState.getY()}");
+        // Debug.Log($"current.t:{targetPointState.getTime()}, current.s:{targetPointState.getS()}, current.v1:{targetPointState.getV1()}, current.x:{targetPointState.getX()}, current.s:{targetPointState.getY()}");
 
         // ここで入力の読み込みたい
         targetPointCtrl.ReadInput(Mathf.FloorToInt(targetPointState.getTime() / _dt)); 

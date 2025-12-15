@@ -201,7 +201,24 @@ public class VehicleRobotState
     public float GetU3() => current.u3;
     public float GetU4() => current.u4;
 
-    public Vector2 GetPosition()
+    // 先頭車両 前輪間中点 Tp1
+    public Vector2 GetMidpointBetweenFrontWheelsOfFV()
+    {
+        Vector2 ret;
+
+        Vector2 pos = GetMidpointBetweenRearWheelsOfFV();
+        float l1 = p.GetL1();
+        float theta1 =  GetTheta1();
+
+        ret.x = pos.x + l1 * Mathf.Cos(theta1);
+        ret.y = pos.y + l1 * Mathf.Sin(theta1);
+
+        return ret;
+    }
+
+
+    // 先頭車両 後輪間中点 (x1, y1)
+    public Vector2 GetMidpointBetweenRearWheelsOfFV()
     {
         Vector2 pos;
 
@@ -209,5 +226,32 @@ public class VehicleRobotState
         pos.y = GetY1();
 
         return pos;
+    }
+
+    // 後方車両 前輪間中点 (x2, y2)
+    public Vector2 GetMidpointBetweenFrontWheelsOfSV()
+    {
+        Vector2 pos;
+
+        pos.x = GetX2();
+        pos.y = GetY2();
+
+        return pos;
+    }
+
+
+    // 後方車両 後輪間中点 Tp2
+    public Vector2 GetMidpointBetweenRearWheelsOfSV()
+    {
+        Vector2 ret;
+
+        Vector2 pos = GetMidpointBetweenFrontWheelsOfSV();
+        float l3 = p.GetL3();
+        float theta3 =  GetTheta3();
+
+        ret.x = pos.x - l3 * Mathf.Cos(theta3);
+        ret.y = pos.y - l3 * Mathf.Sin(theta3);
+
+        return ret;
     }
 }

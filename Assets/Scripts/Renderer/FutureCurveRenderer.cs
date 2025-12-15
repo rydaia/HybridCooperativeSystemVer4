@@ -2,7 +2,7 @@ using UnityEngine;
 using Unity.Mathematics;
 
 [RequireComponent(typeof(LineRenderer))]
-public class BSplineLineRenderer : MonoBehaviour
+public class FutureCurveRenderer : MonoBehaviour
 {
     public CalculationManager calc;
 
@@ -23,21 +23,11 @@ public class BSplineLineRenderer : MonoBehaviour
 
     void LateUpdate()
     {
-        if (calc == null || calc.trajectoryGenerator == null) return;
+        if (calc == null || calc.cpQueue == null) return;
 
-        // Debug.Log("e");
-
-        var native = calc.trajectoryGenerator.resampledNative;
-
-        // Debug.Log($"resampledNative[0]={calc.trajectoryGenerator.resampledNative[0]}");
-        // Debug.Log($"resampledNative[1]={calc.trajectoryGenerator.resampledNative[1]}");
-        // Debug.Log($"resampledNative[2]={calc.trajectoryGenerator.resampledNative[2]}");
-        // Debug.Log($"resampledNative[3]={calc.trajectoryGenerator.resampledNative[3]}");
-        // Debug.Log($"resampledNative[4]={calc.trajectoryGenerator.resampledNative[4]}");
+        var native = calc.cpQueue.GetFutureNative();
 
         int total = native.Length;
-
-        // Debug.Log($"total:{total}");
 
         if (total == 0) return;
 
