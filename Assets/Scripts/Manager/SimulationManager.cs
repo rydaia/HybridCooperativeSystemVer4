@@ -71,6 +71,7 @@ public class SimulationManager : MonoBehaviour {
             "rx2", "ry2",
             "cs1", "cs2",
             "thetaT1", "thetaT2", "thetaP2d",
+            "d1"
         };
 
         string line1 = string.Join(",", header);

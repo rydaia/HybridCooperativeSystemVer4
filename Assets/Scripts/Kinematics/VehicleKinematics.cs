@@ -19,13 +19,12 @@ public class VehicleKinematics : MonoBehaviour
 
 
     [Header("フィードバック制御ゲイン")]
-    public float p31 = -18.0f;// 0.75
-    public float p32 = -108.0f; //0.1865
-    public float p33 = -216.0f; //
+    public float p31 = -18.0f;// 加速度の目標値　誤差をなくそうとする
+    public float p32 = -108.0f; // 速度の目標値　誤差をなくそうとする
+    public float p33 = -216.0f; // 相対位置dの誤差をなくそうとする
     public float k1 = 6.0f;
     public float k2 = 6.0f;
     public float k3 = 6.0f;
-    public float K = 2.0f;
 
     [Header("制御パラメータ 参照")]
 
@@ -830,7 +829,13 @@ public class VehicleKinematics : MonoBehaviour
         float tildaU2 = (w2 - (L3f1h2*tildaU1 + Lf3L2f1h2*tildaU3)) / Lf2L2f1h2;
 
         u1 = (_formulaOf1MinusCs1MulD1)/_cosThetaP1*tildaU1; // 先頭車両追従に関与
+
+        float maxU2 = 1.0f;
+        float minU2 = -1.0f;
+
         u2 = tildaU3; // 先頭車両追従に関与
+        // u2 = Mathf.Clamp(tildaU3, minU2, maxU2);
+
         u3 = tildaU2; 
         u4 = _cosThetaP1MinusThetaP2 / _cosThetaP2MinusThetaP3 * u1 ;
 
@@ -848,6 +853,7 @@ public class VehicleKinematics : MonoBehaviour
     public float GetU2() => u2;
     public float GetU3() => u3;
     public float GetU4() => u4;
+    public float GetD1() => _d1;
 }
 
 

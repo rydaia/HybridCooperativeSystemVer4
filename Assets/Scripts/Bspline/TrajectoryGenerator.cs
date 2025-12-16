@@ -75,8 +75,8 @@ public class TrajectoryGenerator
 
         k = 5;
 
-        smax_past = 8.0f; // [m]
-        smax_future = 2.0f; // [m]
+        smax_past = 20.0f; // [m]
+        smax_future = 4.0f; // [m]
 
         Np = Mathf.FloorToInt(smax_past / 0.01f) + 1;
         Nf = Mathf.FloorToInt(smax_future / 0.01f);

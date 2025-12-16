@@ -80,7 +80,7 @@ public class CalculationManager : MonoBehaviour
         public float thetaT1, thetaT2, thetaP2d; // 目標点の姿勢角
 
         public float u1, u2, u3, u4; // 第一車両 前進速度
-
+        public float d1; 
 
         public int u1Index, u2Index;
         public float rx1, ry1;
@@ -310,6 +310,8 @@ public class CalculationManager : MonoBehaviour
             data.d4rx1du14 = bsplineGeometry.GetD4Rx1du14();
             data.d4ry1du14 = bsplineGeometry.GetD4Ry1du14();
 
+            data.d1 = vehicleKinematics.GetD1();
+
             // data.d1rx2du21 = bsplineGeometry.GetD1Rx2du21();
             // data.d1ry2du21 = bsplineGeometry.GetD1Ry2du21();
             // data.d2rx2du22 = bsplineGeometry.GetD2Rx2du22();
@@ -360,7 +362,7 @@ public class CalculationManager : MonoBehaviour
             "{24:F6},{25:F6}," +
             "{26:F6},{27:F6}," +
             "{28:F6},{29:F6}," + 
-            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6},{38:F6}\n",
+            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6},{38:F6},{39:F6}\n",
             d.time,
             d.s,
             d.x, d.y,
@@ -379,7 +381,8 @@ public class CalculationManager : MonoBehaviour
             d.d4rx1du14, d.d4ry1du14,
             d.rx2, d.ry2,
             d.cs1, d.cs2,
-            d.thetaT1, d.thetaT2, d.thetaP2d
+            d.thetaT1, d.thetaT2, d.thetaP2d,
+            d.d1
         );
     }
 

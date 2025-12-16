@@ -103,7 +103,7 @@ public class VehicleRobotRenderer : MonoBehaviour
         scale = 1f;
         wheelAngleOfFV = 0f;
         wheelAngleOfSV = 0f;
-        wheelRadius = 0.125f; // [m]
+        wheelRadius = 0.55f; // [m]
 
         InitialPositions();
 
@@ -151,7 +151,7 @@ public class VehicleRobotRenderer : MonoBehaviour
         secondVehicleSpeed = calc.vehicleRobotState.GetU4(); // ここは本当に u4 ？（u1,u2,u3 だけなら見直し推奨）
 
         // 先頭車両
-        Vector3 offsetLocalForFV = new Vector3(0.25f, 0f, 0f);
+        Vector3 offsetLocalForFV = new Vector3(1.5f, 0f, 0f);
 
         float firstVehicleDeg  = -theta1 * Mathf.Rad2Deg;
         firstVehicleRotation  = Quaternion.Euler(0f, firstVehicleDeg, 0f);
@@ -160,7 +160,7 @@ public class VehicleRobotRenderer : MonoBehaviour
         
 
         // 後方車両
-        Vector3 offsetLocalForSV = new Vector3(-0.25f, 0f, 0f);
+        Vector3 offsetLocalForSV = new Vector3(-1.5f, 0f, 0f);
 
         float secondVehicleDeg = -theta3 * Mathf.Rad2Deg;
         secondVehicleRotation = Quaternion.Euler(0f, secondVehicleDeg, 0f);

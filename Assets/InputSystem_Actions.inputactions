@@ -1,6 +1,95 @@
 {
+    "version": 1,
     "name": "InputSystem_Actions",
     "maps": [
+        {
+            "name": "G923",
+            "id": "9aca530d-fcdc-41cc-90fd-ec601b3affe2",
+            "actions": [
+                {
+                    "name": "Steer",
+                    "type": "Value",
+                    "id": "889e39ad-1027-49f8-9ff5-bbc92e8fdee8",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Throttle",
+                    "type": "Value",
+                    "id": "4a969877-580f-44b2-b0f0-d0f950243948",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Brake",
+                    "type": "Value",
+                    "id": "cc9dfec8-2fd6-4db1-a325-758c92b22f17",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Mode",
+                    "type": "Button",
+                    "id": "c6ab20ba-ce68-4591-9d7f-24217e063e86",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "6b25796e-7a75-4217-9f1b-6b1b50bc5472",
+                    "path": "<HID::Logitech G923 Racing Wheel for PlayStation and PC>/stick/x",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Steer",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f2b830a0-dace-42f9-8b58-dc5da13b37a2",
+                    "path": "<HID::Logitech G923 Racing Wheel for PlayStation and PC>/z",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Throttle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c6814c12-f096-4d72-8dc1-7767ce65f1a6",
+                    "path": "<HID::Logitech G923 Racing Wheel for PlayStation and PC>/rz",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Brake",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0fa70a76-7953-40ab-9729-d6ad35f3b2c3",
+                    "path": "<HID::Logitech G923 Racing Wheel for PlayStation and PC>/button12",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Mode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
         {
             "name": "Player",
             "id": "df70fa95-8a34-4494-b137-73ab6b9c7d37",
