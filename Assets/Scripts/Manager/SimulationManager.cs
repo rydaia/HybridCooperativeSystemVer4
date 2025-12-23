@@ -63,6 +63,7 @@ public class SimulationManager : MonoBehaviour {
             "vehicle.x2", "vehicle.y2", 
             "vehicle.u1", "vehicle.u2", "vehicle.u3", "vehicle.u4",
             "u1Index", "u2Index",
+            "u1Float", "u2Float",
             "rx1", "ry1",
             "d1rx1du11", "d1ry1du11",
             "d2rx1du12", "d2ry1du12",
@@ -71,7 +72,8 @@ public class SimulationManager : MonoBehaviour {
             "rx2", "ry2",
             "cs1", "cs2",
             "thetaT1", "thetaT2", "thetaP2d",
-            "d1"
+            "d1", 
+            "vehicle.w1", "vehicle.w2", "vehicle.w3"
         };
 
         string line1 = string.Join(",", header);
@@ -264,5 +266,47 @@ public class SimulationManager : MonoBehaviour {
     }
 
     private string F(float v) => v.ToString("F6", CultureInfo.InvariantCulture);
+
+    void OnGUI()
+    {
+        if (this == null) return;
+
+        // m/s
+        float v1_ms = cal.vehicleRobotState.GetU1();          // 車両速度
+        float u1_ms = cal.targetPointState.getV1();           // 目標点 前進速度
+
+        TargetPointMode mode = cal.targetPointState.GetMode();
+
+        // km/h
+        float v1_kmh = v1_ms * 3.6f;
+        float u1_kmh = u1_ms * 3.6f;
+
+        // rad/s
+        float v2_rads = cal.targetPointState.getV2();
+
+        // rad → deg
+        float theta_deg = cal.targetPointState.getTheta() * Mathf.Rad2Deg;
+        float phi1_deg = cal.vehicleRobotState.GetPhi1() * Mathf.Rad2Deg;
+
+
+        GUILayout.BeginArea(new Rect(10, 10, 260, 260));
+
+        GUILayout.Label($"TargetPoint Mode: {mode}", GUI.skin.box);
+
+        GUILayout.Label($"TargetPoint u1: {u1_kmh:F6} km/h", GUI.skin.box);
+
+        GUILayout.Label($"TargetPoint u1: {u1_ms:F6} m/s", GUI.skin.box);
+
+        GUILayout.Label($"TargetPoint v2: {v2_rads:F2} rad/s", GUI.skin.box);
+
+        GUILayout.Label($"TargetPoint θ: {theta_deg:F1} deg", GUI.skin.box);
+
+        GUILayout.Label($"Vehicle Speed: {v1_ms:F6} m/s", GUI.skin.box);
+
+        GUILayout.Label($"Vehicle φ: {phi1_deg:F1} deg", GUI.skin.box);
+
+
+        GUILayout.EndArea();
+    }
 
 }

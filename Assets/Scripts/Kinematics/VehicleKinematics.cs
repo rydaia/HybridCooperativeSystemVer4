@@ -19,12 +19,12 @@ public class VehicleKinematics : MonoBehaviour
 
 
     [Header("フィードバック制御ゲイン")]
-    public float p31 = -18.0f;// 加速度の目標値　誤差をなくそうとする
-    public float p32 = -108.0f; // 速度の目標値　誤差をなくそうとする
-    public float p33 = -216.0f; // 相対位置dの誤差をなくそうとする
-    public float k1 = 6.0f;
-    public float k2 = 6.0f;
-    public float k3 = 6.0f;
+    public float p31;// 加速度の目標値　誤差をなくそうとする
+    public float p32; // 速度の目標値　誤差をなくそうとする
+    public float p33; // 相対位置dの誤差をなくそうとする
+    public float k1;
+    public float k2;
+    public float k3;
 
     [Header("制御パラメータ 参照")]
 
@@ -167,6 +167,19 @@ public class VehicleKinematics : MonoBehaviour
         PathKinematics path
     )
     {
+
+        p31 = -18.0f;// 加速度の目標値　誤差をなくそうとする
+        p32 = -108.0f; // 速度の目標値　誤差をなくそうとする
+        p33 = -216.0f; // 相対位置dの誤差をなくそうとする
+
+        // p31 = -0.75f;// 加速度の目標値　誤差をなくそうとする
+        // p32 = -0.1875f; // 速度の目標値　誤差をなくそうとする
+        // p33 = -0.0015625f; // 相対位置dの誤差をなくそうとする
+
+        k1 = 6.0f;
+        k2 = 6.0f;
+        k3 = 6.0f;
+
 
         this.targetPointState = TPstate;
         this.vehicleRobotState = robot;
@@ -336,8 +349,24 @@ public class VehicleKinematics : MonoBehaviour
 
         _d1 = _dx*_n.x + _dy*_n.y;
 
+
+
+
+        // ここから制御
+        float d0 = 0.005f;
+
+        if(_d1 > d0)
+        {
+
+            float dr = _d1;
+            SetD1(dr);
+        }
+        else
+        {
+            float dr = 0.0f;
+            SetD1(dr);
+        }
         // 第一操作点からベジェ曲線へ下ろした時に垂直となる接戦の角度
-        SetD1(_d1);
     }
 
     // 先頭車両追従に関与
@@ -786,24 +815,37 @@ public class VehicleKinematics : MonoBehaviour
     {
         //　制御入力　w１
         // ok
-        z22 = L1f1h2;
-        z21 = L2f1h2;
+        // Debug.Log($"_d1thetaP2dds11:{_d1thetaP2dds11}, _d2thetaP2dds12:{_d2thetaP2dds12}, _d3thetaP2dds13:{_d3thetaP2dds13}");
+
+        // 車両の制御入力w1, w3を目標点のv1, v2に対応
+        w1 = targetPointState.getV1();
+
+        z33 = _d1;
+        z32 = L1f1h3;
+        z31 = L2f1h3;
+
+        w3 = p31*Mathf.Abs(w1)*z31 + p32*w1*z32 + p33*Mathf.Abs(w1)*z33;
+        // w3 = targetPointState.getV2();
+
+
+        // float maxW3 = 1.0f;
+        // float minW3 = -1.0f;
+        
+        // w3 = Mathf.Clamp(w3, minW3, maxW3);
+
 
         float _d1thetaP2dds11 = pathKinematics.GetD1thetaP2dds11();
         float _d2thetaP2dds12 = pathKinematics.GetD2thetaP2dds12();
         float _d3thetaP2dds13 = pathKinematics.GetD3thetaP2dds13();
 
-        // Debug.Log($"_d1thetaP2dds11:{_d1thetaP2dds11}, _d2thetaP2dds12:{_d2thetaP2dds12}, _d3thetaP2dds13:{_d3thetaP2dds13}");
-
-
-        // 車両の制御入力w1, w3を目標点のv1, v2に対応
-        w1 = targetPointState.getV1();
-        // w3 = targetPointState.getV2();
 
         // 符号付き微分
         _thetaP2d_1 = Mathf.Sign(w1) * _d1thetaP2dds11;
         _thetaP2d_2 = _d2thetaP2dds12;
         _thetaP2d_3 = Mathf.Sign(w1) * _d3thetaP2dds13;
+
+        z22 = L1f1h2;
+        z21 = L2f1h2;
 
         // 
         _thetaP2_1 = Mathf.Sign(w1) * z22;
@@ -813,13 +855,6 @@ public class VehicleKinematics : MonoBehaviour
 
 
         w2 = Mathf.Sign(w1)*_thetaP2_3*w1;
-
-        z33 = _d1;
-        z32 = L1f1h3;
-        z31 = L2f1h3;
-
-        w3 = p31*Mathf.Abs(w1)*z31 + p32*w1*z32 + p33*Mathf.Abs(w1)*z33;
-
     }
 
     public void ComputeControlInputsU()
@@ -830,11 +865,11 @@ public class VehicleKinematics : MonoBehaviour
 
         u1 = (_formulaOf1MinusCs1MulD1)/_cosThetaP1*tildaU1; // 先頭車両追従に関与
 
-        float maxU2 = 1.0f;
-        float minU2 = -1.0f;
+        float maxU2 = 0.7f;
+        float minU2 = -0.7f;
 
         u2 = tildaU3; // 先頭車両追従に関与
-        // u2 = Mathf.Clamp(tildaU3, minU2, maxU2);
+        u2 = Mathf.Clamp(tildaU3, minU2, maxU2);
 
         u3 = tildaU2; 
         u4 = _cosThetaP1MinusThetaP2 / _cosThetaP2MinusThetaP3 * u1 ;
@@ -853,6 +888,13 @@ public class VehicleKinematics : MonoBehaviour
     public float GetU2() => u2;
     public float GetU3() => u3;
     public float GetU4() => u4;
+
+
+    public float GetW1() => w1;
+    public float GetW2() => w2;
+    public float GetW3() => w3;
+
+
     public float GetD1() => _d1;
 }
 

@@ -13,47 +13,70 @@ public class PsFinder
     private VehicleRobotState vehicleRobotState; 
     private BsplineGeometry bsplineGeometry; 
     private VehicleParameters vehicleParams;
+    private SimulationManager sim;
 
     // 配列 ベジェ点と1階微分の前計算 （q = i/(N-1)）
-    NativeArray<float2> R;   // (x,z)
-    NativeArray<float2> dR;  // dR/dq
+    private NativeArray<float2> frontBspline;   // (x,z)
+    private NativeArray<float2> rearBspline;   // (x,z)
+    NativeArray<float2> dFrontBspline;  // dR/dq
+    NativeArray<float2> dRearBspline;  // dR/dq
+
     NativeArray<float> scoreArray;
 
     public bool isInitialSeachedPs1;
     public bool isInitialSeachedPs2;
 
-    public int u1Index, u2Index;
-    public int prevPs1Index, prevPs2Index;
+    public int localU1Index, localU2Index;
+    public int globalU1Index, globalU2Index;
+
+    public int prevLocalPs1Index, prevLocalPs2Index;
+
+    public float u1, u2;
 
     private int N;
+    private int Ns;
+
     private float epsilon = 0.001f; // Ps探索における内積の判定
 
 
     public PsFinder(
         VehicleRobotState robot, 
         TrajectoryGenerator trajectory,
-        BsplineGeometry geo,
-        VehicleParameters parms
+        VehicleParameters parms,
+        SimulationManager sim
     )
     {
         this.trajectoryGenerator = trajectory;
         this.vehicleRobotState = robot;
-        this.bsplineGeometry = geo;
         this.vehicleParams = parms;
 
+        this.sim = sim;
     }
 
-    public void Initialize()
+    public void Initialize(BsplineGeometry geo)
     {
+
+        this.bsplineGeometry = geo;
+
         isInitialSeachedPs1 = false;
         isInitialSeachedPs2 = false;
 
+        localU1Index = 0;
+        localU2Index = 0;
+
+        globalU1Index = 0;
+        globalU2Index = 0;
+
         N = trajectoryGenerator.GetN();
+        Ns = bsplineGeometry.GetNs();
 
-        R   = new NativeArray<float2>(N, Allocator.Persistent);
-        dR  = new NativeArray<float2>(N, Allocator.Persistent);
+        frontBspline   = new NativeArray<float2>(Ns, Allocator.Persistent);
+        rearBspline   = new NativeArray<float2>(Ns, Allocator.Persistent);
 
-        scoreArray = new NativeArray<float>(N, Allocator.Persistent);
+        dFrontBspline = new NativeArray<float2>(Ns, Allocator.Persistent);
+        dRearBspline = new NativeArray<float2>(Ns, Allocator.Persistent);
+
+        scoreArray = new NativeArray<float>(Ns, Allocator.Persistent);
     }
 
 
@@ -61,56 +84,122 @@ public class PsFinder
     {
         using(PsFinderMarker.Auto())
         {
-            prevPs1Index = u1Index;
-            prevPs2Index = u2Index;
+            prevLocalPs1Index = localU1Index;
+            prevLocalPs2Index = localU2Index;
 
-            RebuildCache();
-            // Ps1
+            if(trajectoryGenerator.GetIsUpdateCPFlag())
+            {
+                RebuildCache();
+            }
+
             if (!isInitialSeachedPs1)
             {
-                u1Index = FindPs1PointGlobally_Job();
+                localU1Index = FindPs1PointGlobally_Job();
             }
             else
             {
-                // u1Index = FindPs1PointLocally_Job(100);
-                u1Index = FindPs1PointGlobally_Job();
+                // localU1Index = FindPs1PointLocally_Job(100);
+                localU1Index = FindPs1PointGlobally_Job();
             }
 
 
-            // ここでrx1, ry1をセット
-            bsplineGeometry.SetRx1(trajectoryGenerator.bsplineNative[u1Index].x);
-            bsplineGeometry.SetRy1(trajectoryGenerator.bsplineNative[u1Index].y);
+            if (localU1Index >= Ns)
+            {
+                Debug.LogError($"local u1Index out of front range: {localU1Index}");
+                sim.StopSimulation();
+            }
+            
+            if (localU1Index == 0)
+            {
+                Debug.LogError($"local u1Index out of front range: {localU1Index}");
+                sim.StopSimulation();
+            }
+            
 
-  
+            globalU1Index = bsplineGeometry.ConvertLocalU1IndexToGlobal(localU1Index);
+
+            if (globalU1Index >= N)
+                Debug.LogError($"global u1Index out of front range: {globalU1Index}");
+
+            u1 = bsplineGeometry.CalculateU(globalU1Index);
+
+            // Debug.Log($"localU1Index:{localU1Index}, globalU1Index:{globalU1Index}");
+
+            // ここでrx1, ry1をセット
+            bsplineGeometry.SetRx1(bsplineGeometry.frontPoints[localU1Index].x);
+            bsplineGeometry.SetRy1(bsplineGeometry.frontPoints[localU1Index].y);
 
             // Ps2
             if (!isInitialSeachedPs2)
             {
-                u2Index = FindPs2PointGlobally_Job();
+                localU2Index = FindPs2PointGlobally_Job();
             }
             else
             {
-                u2Index = FindPs2PointLocally_Job(200);
+                localU2Index = FindPs2PointGlobally_Job();
+                // localU2Index = FindPs2PointLocally_Job(200);
             }
 
+            if (localU2Index >= Ns)
+            {
+                Debug.LogError($"PsFinde Failure: local u2Index out of front range: {localU2Index}");
+                sim.StopSimulation();
+            }
+
+
+
+            if (localU2Index == 0)
+            {
+                Debug.LogError($"PsFinde Failure: local u2Index out of front range: {localU2Index}");
+                sim.StopSimulation();
+            }
+
+            globalU2Index = bsplineGeometry.ConvertLocalU2IndexToGlobal(localU2Index);
+
+            if (globalU2Index >= N)
+                Debug.LogError($"global u2Index out of front range: {globalU2Index}");
+
+            u2 = bsplineGeometry.CalculateU(globalU2Index);
+
+            // R(u2)
+            bsplineGeometry.SetRx2(bsplineGeometry.rearPoints[localU2Index].x);
+            bsplineGeometry.SetRy2(bsplineGeometry.rearPoints[localU2Index].y);
             // Debug.Log($"u1Index:{u1Index}, u2Index:{u2Index}, prevPs1Index:{prevPs1Index}, prevPs2Index:{prevPs2Index}");
 
         }
     }
 
-
-    public void RebuildCache() // 経路が変わる時だけ呼ぶ
+    public void RebuildCache()
     {
-        if (!R.IsCreated) return;
+        bsplineGeometry.CopyFrontBspline(frontBspline);
+        bsplineGeometry.CopyFrontDerivative1(dFrontBspline);
 
-        R = trajectoryGenerator.GetBsplineNative();
-        dR = trajectoryGenerator.GetBsplineDerivativeNative();
+        bsplineGeometry.CopyRearBspline(rearBspline);
+        bsplineGeometry.CopyRearDerivative1(dRearBspline);
     }
+
+
+
+    // public void RebuildCache() // 経路が変わる時だけ呼ぶ
+    // {
+    //     if (!frontBspline.IsCreated) return;
+    //     if (!rearBspline.IsCreated) return;
+
+    //     frontBspline = bsplineGeometry.GetFrontBsplineNative();
+    //     rearBspline = bsplineGeometry.GetRearBsplineNative();
+
+    //     dFrontBspline = bsplineGeometry.GetFrontDerivative1Native();
+    //     dRearBspline = bsplineGeometry.GetRearDerivative1Native();
+    // }
 
     public void Dispose()
     {
-        if (R.IsCreated)   R.Dispose();
-        if (dR.IsCreated)  dR.Dispose();
+        if (frontBspline.IsCreated)   frontBspline.Dispose();
+        if (dFrontBspline.IsCreated)  dFrontBspline.Dispose();
+
+        if (rearBspline.IsCreated)   rearBspline.Dispose();
+        if (dRearBspline.IsCreated)  dRearBspline.Dispose();
+
         if (scoreArray.IsCreated) scoreArray.Dispose();
     }
 
@@ -133,17 +222,17 @@ public class PsFinder
         var job = new Ps1EvalJob
         {
             posCurr = new float2(vehicleRobotState.GetX1(), vehicleRobotState.GetY1()),
-            nBspline = N,
+            nBspline = Ns, //
             startIdx = 0,
-            endIdx = N - 1,
+            endIdx = Ns - 1,
             epsilon = epsilon,
-            R = R,
-            dR = dR,
+            R = frontBspline,
+            dR = dFrontBspline,
             score = scoreArray
         };
 
         // 128??
-        JobHandle h = job.Schedule(N, 128);
+        JobHandle h = job.Schedule(Ns, 128);
         h.Complete();
 
 
@@ -152,8 +241,8 @@ public class PsFinder
 
         // 単スレ reduction
         float best = float.PositiveInfinity;
-        int bestIdx = prevPs1Index;
-        for (int i = 0; i < N; i++)
+        int bestIdx = prevLocalPs1Index;
+        for (int i = 0; i < Ns; i++)
         {
             // Debug.Log($"i:{i}, scoreArray[i]:{scoreArray[i]}");
             // Debug.Log($"i:{i}, R[i].x, R[i].y:{R[i].x}, {R[i].y}");
@@ -170,33 +259,33 @@ public class PsFinder
     // 局所探索
     public int FindPs1PointLocally_Job(int range = 100)
     {
-        if (N <= 1) return 0;
+        if (Ns <= 1) return 0;
 
-        int start = Mathf.Max(0, prevPs1Index - range);
-        int end   = Mathf.Min(N-1, prevPs1Index + range);
+        int start = Mathf.Max(0, prevLocalPs1Index - range);
+        int end   = Mathf.Min(N-1, prevLocalPs1Index + range);
 
         // --- 終端近くでは必ず最後まで探索する ---
-        if (prevPs1Index + range >= N - 1)
-            end = N - 1;
+        if (prevLocalPs1Index + range >= Ns - 1)
+            end = Ns - 1;
 
         // ここでIJobParallelForの呼び出し 各ループを並列に処理する
         var job = new Ps1EvalJob
         {
             posCurr = new float2(vehicleRobotState.GetX1(), vehicleRobotState.GetY1()),
-            nBspline = N,
+            nBspline = Ns,
             startIdx = start,
             endIdx = end,
             epsilon = epsilon,
-            R = R,
-            dR = dR,
+            R = frontBspline,
+            dR = dFrontBspline,
             score = scoreArray
         };
 
-        JobHandle h = job.Schedule(N, 128);
+        JobHandle h = job.Schedule(Ns, 128);
         h.Complete();
 
         float best = float.PositiveInfinity;
-        int bestIdx = prevPs1Index;
+        int bestIdx = prevLocalPs1Index;
         for (int i = start; i <= end; i++)
         {
             float s = scoreArray[i];
@@ -215,9 +304,9 @@ public class PsFinder
     // 全域探索
     public int FindPs2PointGlobally_Job()
     {
-        if (N <= 1) 
+        if (Ns <= 1) 
         { 
-            prevPs2Index = 0; 
+            prevLocalPs2Index = 0; 
             return 0; 
         }
 
@@ -228,7 +317,7 @@ public class PsFinder
         // Debug.Log($"_ps1:{_ps1}");
         // Debug.Log($"L2:{vehicleParams.GetL2()}");
 
-        int start = u1Index; // ここから後ろ（小さいq）へ走査していく
+        int start = Ns-1; // ここから後ろ（小さいq）へ走査していく
         int end   = 0;
 
         // jpbの呼び出し
@@ -236,14 +325,14 @@ public class PsFinder
         {
             ps1 = _ps1,
             r2 = r2,
-            nBspline = N,
+            nBspline = Ns,
             startIdx = start,
             endIdx = end,
-            R = R,
+            R = rearBspline,
             err = scoreArray
         };
 
-        JobHandle h = job.Schedule(N, 256);
+        JobHandle h = job.Schedule(Ns, 256);
         h.Complete();
 
         float bestErr = float.PositiveInfinity;
@@ -259,18 +348,17 @@ public class PsFinder
         }
 
         isInitialSeachedPs2 = true;
-        Debug.Log($"global ps2 seach bestId:{bestIdx}");
+        // Debug.Log($"global ps2 seach bestId:{bestIdx}");
 
         return bestIdx;
-
     }
 
     // 局所探索
     public int FindPs2PointLocally_Job(int range = 200)
     {
-        if (N <= 1) 
+        if (Ns <= 1) 
         { 
-            prevPs2Index = 0; 
+            prevLocalPs2Index = 0; 
             return 0; 
         }
 
@@ -278,22 +366,22 @@ public class PsFinder
         float L2abs = math.abs(vehicleParams.GetL2());
         float r2 = L2abs * L2abs;
 
-        int start = Mathf.Min(N - 1, prevPs2Index + range);
-        int end   = Mathf.Max(0,     prevPs2Index - range);
+        int start = Mathf.Min(Ns - 1, prevLocalPs2Index + range);
+        int end   = Mathf.Max(0,     prevLocalPs2Index - range);
 
         // job呼び出し
         var job = new Ps2EvalJob
         {
             ps1 = ps1,
             r2 = r2,
-            nBspline = N,
+            nBspline = Ns,
             startIdx = start, // こちらは大きい→小さい方向に使う
             endIdx = end,
-            R = R,
+            R = rearBspline,
             err = scoreArray
         };
 
-        JobHandle h = job.Schedule(N, 256);
+        JobHandle h = job.Schedule(Ns, 256);
         h.Complete();
 
         float bestErr = float.PositiveInfinity;
@@ -312,8 +400,10 @@ public class PsFinder
         return bestIdx;
     }
 
-    public int GetU1Index() => u1Index;
-    public int GetU2Index() => u2Index;
+    public int GetU1Index() => globalU1Index;
+    public int GetU2Index() => globalU2Index;
 
+    public float GetU1() => u1;
+    public float GetU2() => u2;
 }
 

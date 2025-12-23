@@ -16,11 +16,20 @@ public class ControlPointResampler
     public void Initialize(float smax_past)
     {
         // float ds = 0.01f;
-        this.ds = 0.01f;
+        // this.ds = 0.01f;
+        // this.ds = 0.1f;
+        // this.ds = 0.2f;
+        this.ds = 0.5f;
+        // this.ds = 1.0f;
+
+
+
         // float totalS = smax_past + smax_future;
         float totalS = smax_past;
 
+        // Nresample = Mathf.FloorToInt(totalS / ds) + 1;
         Nresample = Mathf.FloorToInt(totalS / ds) + 1;
+
 
         resampled = new NativeArray<float2>(Nresample, Allocator.Persistent);
 

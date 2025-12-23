@@ -18,34 +18,32 @@ public class BsplineGeometry
 
 
     private PsFinder psFinder;
-
-    //　制御点データ
-    NativeArray<float2> ctrl;
-    //　制御点データ　 1階微分
-    NativeArray<float2> beta1;
-    //　制御点データ 1階微分
-    NativeArray<float2> beta2;
-    //　制御点データ 1階微分
-    NativeArray<float2> beta3;
-    //　制御点データ 1階微分
-    NativeArray<float2> beta4;
-    // ノットベクトル
-    NativeArray<float> knots;
-    NativeArray<float> knots1, knots2, knots3, knots4;
-    //　Bスプライン曲線 R(u)
-    NativeArray<float2> points;   // 出力点　N
-    // 1階微分　dR(u)/du
-    NativeArray<float2> derivative1;   // 出力点　N
-
     public TrajectoryGenerator trajectoryGenerator;
 
+    //　制御点データ
+    float2[] controlPoints;
+    // ノットベクトル
+    float[] knots;
 
-    int Nctrl; // 制御点の総数　1202
-    int N;// 120100
+    //　Bスプライン曲線 R(u)
+    // 200,0000点離散点を保持するのは難しいため、Ps探索に必要な範囲だけに切り抜く
+    // 先頭車両のPs探索用 離散点 5[m]
+    public float2[] frontPoints;
+    // 後方車両のPs探索用 離散点 5[m]
+    public float2[] rearPoints;
+    // 1階微分　dR(u)/du
+    public float2[] frontDerivative1;
+    public float2[] rearDerivative1;
+
+
+    private int Nctrl; // 制御点の総数　1202
+    private int N;// 120100
+    private int Ns;
     public float ds;
-    private int k;   // 次数（3）
-    private int n;   // 制御点数−1
-    int m;   // ノット数　可変
+    private int k;
+    private int p; 
+    private int n;
+    private int m;   // ノット数　可変
     public float[] u;
     private float u_min;
     private float u_max;
@@ -62,6 +60,11 @@ public class BsplineGeometry
     private float d3Rx2du23, d3Ry2du23;
     private float d4Rx2du24, d4Ry2du24;
 
+    private float[,] Nmat, dbMat1, dbMat2, dbMat3, dbMat4;
+    private int frontStart, frontEnd;
+    private int rearStart, rearEnd;
+
+
     public BsplineGeometry()
     {
     }
@@ -71,37 +74,108 @@ public class BsplineGeometry
         this.trajectoryGenerator = trajectoryGenerator;
         this.psFinder = finder;
 
-        ctrl = new NativeArray<float2>(trajectoryGenerator.GetNctrl(), Allocator.Persistent);
-        // ② Nctrl を使って n, m を決定
-        k = trajectoryGenerator.GetK();               
+
+
+
+        // controlPoints = new NativeArray<float2>(trajectoryGenerator.GetNctrl(), Allocator.Persistent);
+        Nctrl = trajectoryGenerator.GetNctrl();
+        controlPoints = new float2[Nctrl];
+
+        k = trajectoryGenerator.GetK() + 1;
+        p = k - 1;               
         n = trajectoryGenerator.GetNctrl() - 1;      // ← 1201
         m = n + k + 1; // 1001
-        // ⑤ 出力配列を確保
-        N = trajectoryGenerator.GetN();
 
-        points = new NativeArray<float2>(N, Allocator.Persistent);
-        derivative1 = new NativeArray<float2>(N, Allocator.Persistent);
+        N = trajectoryGenerator.GetN(); // 20,000
+        // 部分的に切り抜くため
+        Ns = 8001;
 
-        knots = new NativeArray<float>(m + 1, Allocator.Persistent);
-        knots = GenerateKnots(knots, k, n ,m);
-        knots1 = SubKnots(knots, 1);
-        knots2 = SubKnots(knots, 2);
-        knots3 = SubKnots(knots, 3);
-        knots4 = SubKnots(knots, 4);
+        frontStart = N - Ns; // 15,000
+        frontEnd   = frontStart + Ns; // 20,001
 
-        beta1 = new NativeArray<float2>(n, Allocator.Persistent);
-        beta2 = new NativeArray<float2>(n - 1, Allocator.Persistent);
-        beta3 = new NativeArray<float2>(n - 2, Allocator.Persistent);
-        beta4 = new NativeArray<float2>(n - 3, Allocator.Persistent);
+        rearStart = 2000;
+        rearEnd = rearStart + Ns; // 11,0001
+
+        // t_ver = 0:9
+        float[] t_ver = new float[Nctrl];
+
+        for (int i = 0; i < Nctrl; i++)
+            t_ver[i] = i;
+
+        // ノットベクトルの算出
+        knots = GenerateKnots(Nctrl, p, t_ver);
+
+        // 曲線を細かくサンプリングするパラメータの生成
+        float[] t_sampling = new float[N];
+        for (int i = 0; i < N; i++)
+            t_sampling[i] = math.lerp(t_ver[0], t_ver[^1], (float)i / (N - 1));
+
+        // Bスプライン基底関数行列の算出
+        // Ns x n行列
+        Debug.Log("CalculateBsplineBasisMatrix(k, t_sampling, knots) Start");
+        Nmat = CalculateBsplineBasisMatrix(k, t_sampling, knots);
+
+        Debug.Log("CalculateBsplineBasisDerivativeMatrix() 1階微分 Start");
+        int order = 1;
+        dbMat1 = CalculateBsplineBasisDerivativeMatrix(k, knots, t_sampling, order);
+
+        Debug.Log("CalculateBsplineBasisDerivativeMatrix() 2階微分 Start");
+        order = 2;
+        dbMat2 = CalculateBsplineBasisDerivativeMatrix(k, knots, t_sampling, order);
+
+        Debug.Log("CalculateBsplineBasisDerivativeMatrix() 3階微分 Start");
+        order = 3;
+        dbMat3 = CalculateBsplineBasisDerivativeMatrix(k, knots, t_sampling, order);
+
+        Debug.Log("CalculateBsplineBasisDerivativeMatrix() 4階微分 Start");
+        order = 4;
+        dbMat4 = CalculateBsplineBasisDerivativeMatrix(k, knots, t_sampling, order);
+
+        frontPoints = new float2[Ns];
+        rearPoints = new float2[Ns];
+
+        frontDerivative1 = new float2[Ns];
+        rearDerivative1 = new float2[Ns];
 
         ds = trajectoryGenerator.GetDs();
 
         u_min = knots[k];
         u_max = knots[n + 1];
 
+        u = CaluculateArrayU();
+
+        Debug.Log($"u_min:{u_min}, u_max:{u_max}");
+
         Debug.Log("BsplineGeometry Initialize 完了");
     }
 
+    // pastデータ近似しなくて良くないか
+    // 離散点列データは一部だけで良い説
+    // Ps探索だけに使う
+    public void Approximate(float2[] input)
+    {
+
+        // Debug.Log("EvaluateBspline(Nmat, controlPoints) Start");
+        // input が制御点なら、まず controlPoints に反映
+        if (input.Length != Nctrl) Debug.LogError($"input.Length={input.Length} Nctrl={Nctrl}");
+        Array.Copy(input, controlPoints, Nctrl);
+
+        frontPoints = EvaluateBspline(Nmat, frontStart, frontEnd);
+        rearPoints = EvaluateBspline(Nmat, rearStart, rearEnd);
+
+        return;
+    }
+
+
+    public void Derivative1AllPoints()
+    {
+
+        // Debug.Log("DerivativeBspline(dbMat1, controlPoints) 1階微分 Start");
+        frontDerivative1 = DerivativeBspline(dbMat1, frontStart, frontEnd);
+        rearDerivative1 = DerivativeBspline(dbMat1, rearStart, rearEnd);
+
+        return;
+    }
 
     public void CalculationBsplineGeometry()
     {
@@ -109,125 +183,307 @@ public class BsplineGeometry
         using (bsplineGeometryMarker.Auto())
         {
 
-
             // Ps探索で見つけたインデックスを取得
             // int idx = PsFinder.u1Index;
             int u1Index = psFinder.GetU1Index();
             int u2Index = psFinder.GetU2Index();
 
-            // deboorで使用する制御点を再度作成 beta1, beta2, beta3, beta4
-            // CalculateDerivativeControlPointsJob();
 
-            SetD1Rx1du11(trajectoryGenerator.bsplineDerivativeNative[u1Index].x);
-            SetD1Ry1du11(trajectoryGenerator.bsplineDerivativeNative[u1Index].y);
-
-            // R(u2)
-            SetRx2(trajectoryGenerator.bsplineNative[u2Index].x);
-            SetRy2(trajectoryGenerator.bsplineNative[u2Index].y);
-
-            SetD1Rx2du21(trajectoryGenerator.bsplineDerivativeNative[u2Index].x);
-            SetD1Ry2du21(trajectoryGenerator.bsplineDerivativeNative[u2Index].y);
 
             // R(u)の各u微分を計算
-            EvaluateDerivativesAtU(u1Index, u2Index);
+            EvaluateDerivativesAtU1(u1Index);
+            EvaluateDerivativesAtU2(u2Index);
         }
     }
 
-    NativeArray<float> SubKnots(NativeArray<float> knots, int r)
+    private float[] CaluculateArrayU()
     {
-        int newLen = knots.Length - 2 * r;
-        var newKnots = new NativeArray<float>(newLen, Allocator.Persistent);
 
-        for (int i = 0; i < newLen; i++)
-            newKnots[i] = knots[i + r];
+        float[] array = new float[N];
 
-        return newKnots;
+        for (int i = 0; i < N; i++)
+            array[i] = CalculateU(i);
+
+        return array; 
     }
 
-    private NativeArray<float> GenerateKnots(NativeArray<float> K, int k, int n, int m)
+
+    private float2[] EvaluateBspline(
+        float[,] Nmat,
+        int start,
+        int end
+    )
     {
-        // 開一様ノット
-        for (int i = 0; i <= k; i++)
-            K[i] = 0;
+        int n  = Nmat.GetLength(1);
 
-        for (int i = k + 1; i <= n; i++)
-            K[i] = i - k;
+        float2[] C = new float2[Ns];
 
-        for (int i = n + 1; i < m + 1; i++)
-            K[i] = n - k + 1; // 996
+        int Nt = Nmat.GetLength(0);
+        int idx = 0; // ← C用のインデックス
 
-        // Debug.Log($"K:{K[0]}, {K[1]}, {K[2]}, {K[3]}, {K[4]}, ... , {K[m-5]}, {K[m-4]}, {K[m-3]}, {K[m-2]}, {K[m-1]}");
-
-        return K;
-    }
-
-        // 制御点のサイズが可変になるため
-    public NativeArray<float2> Approximate(NativeArray<float2> input)
-    {
-        int Nctrl = input.Length;
-
-        n = Nctrl - 1;
-        m = n + k + 1;
-
-        ctrl.CopyFrom(input);
-
-        u_min = knots[k]; // u_min = knots[3] = 0
-        u_max = knots[n + 1]; // u_max = knots[1001] = 995
-
-        // points
-        using(GeneratePointsMarker.Auto())
+        for (int j = start; j < end; j++)
         {
-            var job = new BSplineJob {
-                ctrl = ctrl,
-                knots = knots,
-                output = points,
-                k = k,
-                n = n, 
-                m = m,
-                u_min = u_min, 
-                u_max = u_max
-            };
-
-            JobHandle handle = job.Schedule(N, 64);
-            handle.Complete();
+            float2 sum = float2.zero;
+            for (int i = 0; i < n; i++)
+            {
+                sum += Nmat[j, i] * controlPoints[i];
+            }
+            C[idx] = sum;
+            idx++;
         }
 
-        return points;
+        return C;
     }
 
-    public NativeArray<float2> DerivativeAllPoints()
+    private float2[] DerivativeBspline(
+        float[,] Nmat,
+        int start,
+        int end
+    )
     {
+        int n  = Nmat.GetLength(1);
 
-        CalculateDerivativeControlPointsJob();
+        float2[] C = new float2[Ns];
 
-        // Debug.Log($"u_min ={u_min}, u_max={u_max}");
-        // Debug.Log($"beta1[0]={geo.GetBeta1()[0]}, beta1[degree]={geo.GetBeta1()[k-1]}");
-        // Debug.Log($"knots1[degree]={geo.GetKnots1()[k-1]}, knots1[n+1]={geo.GetKnots1()[n+1]}");
+        int idx = 0; // ← C用のインデックス
 
-        using(DerivativePointsMarker.Auto())
+        for (int j = start; j < end; j++)
         {
-            var job = new BSplineDerivative1Job {
-                ctrl = beta1,
-                knots = knots1,
-                degree = k-1,
-                u_min = u_min, // 0
-                u_max = u_max, // 996
-                results = derivative1
-            };
-
-            JobHandle handle = job.Schedule(N, 64);
-            handle.Complete();
+            float2 sum = float2.zero;
+            for (int i = 0; i < n; i++)
+            {
+                sum += Nmat[j, i] * controlPoints[i];
+            }
+            C[idx] = sum;
+            idx++;
         }
 
-        return derivative1;
+        return C;
     }
 
-
-    private float Alpha(float u, int i, int r)
+    private float[] GenerateKnots(
+        int N_sampling,
+        int p,
+        float[] t_ver
+    )
     {
-        float denom = knots[i + k - r + 1] - knots[i];
-        return (denom == 0) ? 0 : (u - knots[i]) / denom;
+        int maxKnots = (N_sampling - 1) + p + 1;
+        int numKnotsRoom = maxKnots - 2 * p - 1;
+
+        float endVal = t_ver[t_ver.Length - 1];
+
+        // knot_start, knot_end
+        float[] knot = new float[maxKnots + 1];
+
+        // start
+        // 最初のp+1個
+        for (int i = 0; i <= p; i++)
+            knot[i] = 0f;
+
+        // middle
+        for (int j = 0; j < numKnotsRoom; j++)
+        {
+            int j_start = j + 1;
+            int j_end   = j + p;
+
+            float sum = 0f;
+            for (int i = j_start; i <= j_end; i++)
+                sum += t_ver[i];
+
+            knot[p + 1 + j] = sum / p;
+        }
+
+        // end
+        // 最後ののp+1個
+        for (int i = maxKnots - p; i <= maxKnots; i++)
+            knot[i] = endVal;
+
+        return knot;
     }
+
+    private float[,] CalculateBsplineBasisMatrix(
+        int k, 
+        float[] tValue, 
+        float[] knots
+    )
+    {
+
+        int p = k - 1;
+        int n = knots.Length - p - 1;
+
+        // 基底関数の数
+        int Nt = tValue.Length;
+
+        // 基底関数の行列を初期化
+        float[,] Nmat = new float[Nt, n];
+
+
+        for (int j = 0; j < Nt; j++)
+        {
+            float x = tValue[j];
+            for (int i = 0; i < n; i++)
+            {
+                Nmat[j, i] = BsplineBasis(i, p, knots, x);
+            }
+        }
+        return Nmat;
+    }
+
+    static float BsplineBasis(int i, int p, float[] knots, float x)
+    {
+        if (p == 0)
+        {
+            // MATLAB: if k(end-1) > x
+            if (knots[knots.Length - 2] > x)
+            {
+                if(knots[i] <= x && x < knots[i + 1])
+                    return 1f;
+                else
+                    return 0f;
+            }
+            else
+            {
+                if(knots[i] <= x && x <= knots[i + 1])
+                    return 1f;
+                else
+                    return 0f;
+            }
+        }
+        else
+        {
+            float denom1 = knots[i + p] - knots[i];
+            float denom2 = knots[i + p + 1] - knots[i + 1];
+
+            float term1, term2;
+
+            if(denom1 == 0f)
+                term1 = 0f;
+            else
+                term1 = (x - knots[i]) / denom1 * BsplineBasis(i, p - 1, knots, x);
+
+            if(denom2 == 0f)
+                term2 = 0f;
+            else
+                term2 = (knots[i + p + 1] - x) / denom2 * BsplineBasis(i + 1, p - 1, knots, x);
+
+            return term1 + term2;
+        }
+    }
+
+    private float[,] CalculateBsplineBasisDerivativeMatrix(
+        int k,
+        float[] knots,
+        float[] t_sampling,
+        int order
+    )
+    {
+        int p = k - 1;
+        int n = knots.Length - p - 1;
+        int Nt = t_sampling.Length;
+
+        float[,] dNmat = new float[Nt, n];
+
+        for (int j = 0; j < Nt; j++)
+        {
+            float x = t_sampling[j];
+
+            for (int i = 0; i < n; i++)
+            {
+                dNmat[j, i] =
+                    BsplineBasisDerivative(i, p, knots, x, order);
+            }
+        }
+
+        return dNmat;
+    }
+
+    static float BsplineBasisDerivative(
+        int i,
+        int p,
+        float[] knots,
+        float x,
+        int order   // 微分階数
+    )
+    {
+        // 0階微分 → 通常の基底関数
+        if (order == 0)
+            return BsplineBasis(i, p, knots, x);
+
+        // pが0なら導関数は0
+        if (p == 0)
+            return 0f;
+
+        float denom1 = knots[i + p]     - knots[i];
+        float denom2 = knots[i + p + 1] - knots[i + 1];
+
+        float term1 = 0f;
+        float term2 = 0f;
+
+        if (denom1 != 0f)
+        {
+            term1 = p / denom1 * BsplineBasisDeriv(i,     p - 1, knots, x, order - 1);
+        }
+
+        if (denom2 != 0f)
+        {
+            term2 = p / denom2 * BsplineBasisDeriv(i + 1, p - 1, knots, x, order - 1);
+        }
+
+        return term1 - term2;
+    }
+
+    static float BsplineBasisDeriv(
+        int i,
+        int p,
+        float[] knots,
+        float x,
+        int order   // 微分階数
+    )
+    {
+        // 0階微分 → 通常の基底関数
+        if (order == 0)
+            return BsplineBasis(i, p, knots, x);
+
+        // pが0なら導関数は0
+        if (p == 0)
+            return 0f;
+
+        float denom1 = knots[i + p]     - knots[i];
+        float denom2 = knots[i + p + 1] - knots[i + 1];
+
+        float term1 = 0f;
+        float term2 = 0f;
+
+        if (denom1 != 0f)
+        {
+            term1 = p / denom1 * BsplineBasisDeriv(i,     p - 1, knots, x, order - 1);
+        }
+
+        if (denom2 != 0f)
+        {
+            term2 = p / denom2 * BsplineBasisDeriv(i + 1, p - 1, knots, x, order - 1);
+        }
+
+        return term1 - term2;
+    }
+
+    public int ConvertLocalU1IndexToGlobal(int localIndex)
+    {
+        // グローバル(0~N)に変換
+        int globalIndex = localIndex + frontStart;
+
+        return globalIndex;
+    }
+
+    public int ConvertLocalU2IndexToGlobal(int localIndex)
+    {
+        // グローバル(0~N)に変換
+        int globalIndex = localIndex + rearStart;
+
+        return globalIndex;
+    }
+
+
 
     public float GetUMin()
     {
@@ -239,191 +495,147 @@ public class BsplineGeometry
         return u_max;
     }
 
-    public void CalculateDerivativeControlPointsJob()
+    public float[] GetArrayU()
     {
-        // 制御点を取得
-        this.ctrl = trajectoryGenerator.resampledNative;
-
-        var job1 = new DerivativeCtrlJob {
-            ctrl = ctrl,
-            knots = knots,
-            degree = k,       // ← trajectory で使っている本来の次数
-            beta = beta1
-        }.Schedule(beta1.Length, 64);
-
-        var job2 = new DerivativeCtrlJob {
-            ctrl = beta1,
-            knots = knots1,
-            degree = k - 1,
-            beta = beta2
-        }.Schedule(beta2.Length, 64, job1);
-
-        var job3 = new DerivativeCtrlJob {
-            ctrl = beta2,
-            knots = knots2,
-            degree = k - 2,
-            beta = beta3
-        }.Schedule(beta3.Length, 64, job2);
-
-        var job4 = new DerivativeCtrlJob {
-            ctrl = beta3,
-            knots = knots3,
-            degree = k - 3,
-            beta = beta4
-        }.Schedule(beta4.Length, 64, job3);
-
-        job4.Complete();
-        // Debug.Log($"beta1[0]={beta1[0]}, beta1[1000]={beta1[1000]}");
-
+        return u;
     }
 
-    public void EvaluateDerivativesAtU(int idx1, int idx2)
+    public float CalculateU(int idx)
     {
-        float u1 = math.lerp(u_min, u_max, (float)idx1 / (N - 1));
-        float u2 = math.lerp(u_min, u_max, (float)idx2 / (N - 1));
+        // float u = math.lerp(u_min, u_max, ));
+        float u = (1 - (float)idx / (N - 1)) * u_min + (float)idx / (N - 1) * u_max;
 
-        // 結果バッファ（1〜4階微分）
-        var d1u1 = new NativeArray<float2>(1, Allocator.TempJob);
-        var d2u1 = new NativeArray<float2>(1, Allocator.TempJob);
-        var d3u1 = new NativeArray<float2>(1, Allocator.TempJob);
-        var d4u1 = new NativeArray<float2>(1, Allocator.TempJob);
-
-        var d1u2 = new NativeArray<float2>(1, Allocator.TempJob);
-        var d2u2 = new NativeArray<float2>(1, Allocator.TempJob);
-        var d3u2 = new NativeArray<float2>(1, Allocator.TempJob);
-        var d4u2 = new NativeArray<float2>(1, Allocator.TempJob);
-
-        // --------------------
-        // u1 の微分計算
-        // --------------------
-        var j1 = new EvaluateDerivativeJob {
-            beta = beta1,
-            knots = knots1,
-            degree = k - 1,
-            u = u1,
-            result = d1u1
-        }.Schedule();
-
-        var j2 = new EvaluateDerivativeJob {
-            beta = beta2,
-            knots = knots2,
-            degree = k - 2,
-            u = u1,
-            result = d2u1
-        }.Schedule(j1);
-
-        var j3 = new EvaluateDerivativeJob {
-            beta = beta3,
-            knots = knots3,
-            degree = k - 3,
-            u = u1,
-            result = d3u1
-        }.Schedule(j2);
-
-        var j4 = new EvaluateDerivativeJob {
-            beta = beta4,
-            knots = knots4,
-            degree = k - 4,
-            u = u1,
-            result = d4u1
-        }.Schedule(j3);
-
-
-        // --------------------
-        // u2 の微分計算（u1 完了後）
-        // --------------------
-        var j5 = new EvaluateDerivativeJob {
-            beta = beta1,
-            knots = knots1,
-            degree = k - 1,
-            u = u2,
-            result = d1u2
-        }.Schedule(j4);
-
-        var j6 = new EvaluateDerivativeJob {
-            beta = beta2,
-            knots = knots2,
-            degree = k - 2,
-            u = u2,
-            result = d2u2
-        }.Schedule(j5);
-
-        var j7 = new EvaluateDerivativeJob {
-            beta = beta3,
-            knots = knots3,
-            degree = k - 3,
-            u = u2,
-            result = d3u2
-        }.Schedule(j6);
-
-        var j8 = new EvaluateDerivativeJob {
-            beta = beta4,
-            knots = knots4,
-            degree = k - 4,
-            u = u2,
-            result = d4u2
-        }.Schedule(j7);
-
-        j8.Complete();
-
-        // --- U1 の微分結果反映 ---
-        SetD1Rx1du11(d1u1[0].x);
-        SetD1Ry1du11(d1u1[0].y);
-        SetD2Rx1du12(d2u1[0].x);
-        SetD2Ry1du12(d2u1[0].y);
-        SetD3Rx1du13(d3u1[0].x);
-        SetD3Ry1du13(d3u1[0].y);
-        SetD4Rx1du14(d4u1[0].x);
-        SetD4Ry1du14(d4u1[0].y);
-
-        // --- U2 ---
-        SetD1Rx2du21(d1u2[0].x);
-        SetD1Ry2du21(d1u2[0].y);
-        SetD2Rx2du22(d2u2[0].x);
-        SetD2Ry2du22(d2u2[0].y);
-        SetD3Rx2du23(d3u2[0].x);
-        SetD3Ry2du23(d3u2[0].y);
-        SetD4Rx2du24(d4u2[0].x);
-        SetD4Ry2du24(d4u2[0].y);
-
-        d1u1.Dispose();
-        d2u1.Dispose();
-        d3u1.Dispose();
-        d4u1.Dispose();
-        d1u2.Dispose();
-        d2u2.Dispose();
-        d3u2.Dispose();
-        d4u2.Dispose();
+        return u;
     }
 
-
-    public void Dispose()
+    // idx1はグローバル
+    public void EvaluateDerivativesAtU1(int idx1)
     {
-        if (ctrl.IsCreated)  ctrl.Dispose();
 
-        if (beta1.IsCreated) beta1.Dispose();
-        if (beta2.IsCreated) beta2.Dispose();
-        if (beta3.IsCreated) beta3.Dispose();
-        if (beta4.IsCreated) beta4.Dispose();
+        // Debug.Log($"global u1 idx:{idx1}");
 
-        if (knots.IsCreated) knots.Dispose();
-        if (knots1.IsCreated) knots1.Dispose();
-        if (knots2.IsCreated) knots2.Dispose();
-        if (knots3.IsCreated) knots3.Dispose();
-        if (knots4.IsCreated) knots4.Dispose();
+        float u1 = CalculateU(idx1);
+        int n  = Nmat.GetLength(1);
 
-        if (points.IsCreated) points.Dispose();
-        if (derivative1.IsCreated) derivative1.Dispose();
+        // Debug.Log($"n:{n}");
+
+        float2 d1R1du11 = float2.zero;
+        float2 d2R1du12 = float2.zero; 
+        float2 d3R1du13 = float2.zero; 
+        float2 d4R1du14 = float2.zero;
+
+        // 1階微分
+        for (int i = 0; i < n; i++)
+        {
+            d1R1du11 += dbMat1[idx1, i] * controlPoints[i];
+        }
+        SetD1Rx1du11(d1R1du11.x);
+        SetD1Ry1du11(d1R1du11.y);
+
+        // 2階微分
+        for (int i = 0; i < n; i++)
+        {
+            d2R1du12 += dbMat2[idx1, i] * controlPoints[i];
+        }
+        SetD2Rx1du12(d2R1du12.x);
+        SetD2Ry1du12(d2R1du12.y);
+
+        // 3階微分
+        for (int i = 0; i < n; i++)
+        {
+            d3R1du13 += dbMat3[idx1, i] * controlPoints[i];
+        }
+        SetD3Rx1du13(d3R1du13.x);
+        SetD3Ry1du13(d3R1du13.y);
+
+        // 4階微分
+        for (int i = 0; i < n; i++)
+        {
+            d4R1du14 += dbMat4[idx1, i] * controlPoints[i];
+        }
+        SetD4Rx1du14(d4R1du14.x);
+        SetD4Ry1du14(d4R1du14.y);
+
+        // Debug.Log($"d1R1du11:{d1R1du11}, d2R1du12:{d2R1du12}, d3R1du13:{d3R1du13}, d4R1du14:{d4R1du14}");
     }
 
-    //     public void Dispose()
-//     {
-//         if (ctrl.IsCreated) ctrl.Dispose();
-//         if (knots.IsCreated) knots.Dispose();
-//         if (points.IsCreated) points.Dispose();
-//         if (derivative1.IsCreated) derivative1.Dispose();
+    public void EvaluateDerivativesAtU2(int idx2)
+    {
+        float u2 = CalculateU(idx2);
+        int n  = Nmat.GetLength(1);
 
-//     }
+        float2 d1R2du21 = float2.zero; 
+        float2 d2R2du22 = float2.zero; 
+        float2 d3R2du23 = float2.zero; 
+        float2 d4R2du24 = float2.zero;
+
+        // 1階微分
+        for (int i = 0; i < n; i++)
+        {
+            d1R2du21 += dbMat1[idx2, i] * controlPoints[i];
+        }
+        SetD1Rx2du21(d1R2du21.x);
+        SetD1Ry2du21(d1R2du21.y);
+
+        // 2階微分
+        for (int i = 0; i < n; i++)
+        {
+            d2R2du22 += dbMat2[idx2, i] * controlPoints[i];
+        }
+        SetD2Rx2du22(d2R2du22.x);
+        SetD2Ry2du22(d2R2du22.y);
+
+        // 3階微分
+        for (int i = 0; i < n; i++)
+        {
+            d3R2du23 += dbMat3[idx2, i] * controlPoints[i];
+        }
+        SetD3Rx2du23(d3R2du23.x);
+        SetD3Ry2du23(d3R2du23.y);
+
+        // 4階微分
+        for (int i = 0; i < n; i++)
+        {
+            d4R2du24 += dbMat4[idx2, i] * controlPoints[i];
+        }
+        SetD4Rx2du24(d4R2du24.x);
+        SetD4Ry2du24(d4R2du24.y);
+    }
+
+    public void CopyFrontBspline(NativeArray<float2> dst)
+    {
+        if (dst.Length != frontPoints.Length)
+        {
+            Debug.Log($"dst.Length:{dst.Length} frontPoints.Length:{frontPoints.Length}");
+            throw new Exception("Size mismatch");
+        }
+
+        dst.CopyFrom(frontPoints);
+    }
+
+    public void CopyFrontDerivative1(NativeArray<float2> dst)
+    {
+        if (dst.Length != frontDerivative1.Length)
+            throw new Exception("Size mismatch");
+
+        dst.CopyFrom(frontDerivative1);
+    }
+
+    public void CopyRearBspline(NativeArray<float2> dst)
+    {
+        if (dst.Length != rearPoints.Length)
+            throw new Exception("Size mismatch");
+
+        dst.CopyFrom(rearPoints);
+    }
+
+    public void CopyRearDerivative1(NativeArray<float2> dst)
+    {
+        if (dst.Length != rearDerivative1.Length)
+            throw new Exception("Size mismatch");
+
+        dst.CopyFrom(rearDerivative1);
+    }
 
 
     // Setter
@@ -472,70 +684,17 @@ public class BsplineGeometry
     public float GetD4Rx2du24() => d4Rx2du24;
     public float GetD4Ry2du24() => d4Ry2du24;
 
-    public NativeArray<float> GetKnots() => knots;
-    // public NativeArray<float> GetKnots1() => knots1;
-    public NativeArray<float2> GetBeta1() => beta1;
+    // public NativeArray<float> GetKnots() => knots;
 
-    public float2[] GetPointsManaged()
+
+    public float2[] GetFrontPoints() => frontPoints;
+    public float2[] GetRearPoints() => rearPoints;
+
+    public float2[] GetFrontDerivative1() => frontDerivative1;
+    public float2[] GetRearDerivative1() => rearDerivative1;
+
+    public int GetNs()
     {
-        float2[] arr = new float2[N];
-        for (int i = 0; i < N; i++)
-            arr[i] = points[i];
-        return arr;
+        return Ns;
     }
-
 }
-
-
-    // private int FindSpan(float u, int degree, int n, NativeArray<float> knots)
-    // {
-    //     if (u >= knots[n + 1])
-    //         return n;
-
-    //     int low = degree;
-    //     int high = n + 1;
-    //     int mid = (low + high) / 2;
-
-    //     while (u < knots[mid] || u >= knots[mid + 1])
-    //     {
-    //         if (u < knots[mid]) high = mid;
-    //         else low = mid;
-    //         mid = (low + high) / 2;
-    //     }
-
-    //     return mid;
-    // }
-
-    // points[i] = CalculateBsplinePoint(u, ctrl, k, knots);
-    // public float2 CalculateBsplinePoint(float u, NativeArray<float2> ctrl, int degree, NativeArray<float> knots)
-    // {
-    //     return DeBoorEvaluate(ctrl, u, degree, knots);
-    // }
-
-    // private float2 DeBoorEvaluate(NativeArray<float2> ctrl, float u, int degree, NativeArray<float> knots)
-    // {
-    //     int n = ctrl.Length - 1;
-
-    //     int span = FindSpan(u, degree, ctrl.Length - 1, knots);
-
-    //     float2[] d = new float2[degree + 1];
-
-    //     for (int j = 0; j <= degree; j++)
-    //     {
-    //         d[j] = ctrl[span - degree + j];
-    //     }
-
-    //     for (int r = 1; r <= degree; r++)
-    //     {
-    //         for (int j = degree; j >= r; j--)
-    //         {
-    //             int i = span - degree + j;
-    //             float denom = knots[i + degree - r + 1] - knots[i];
-    //             float alpha = (denom == 0) ? 0 : (u - knots[i]) / denom;
-
-    //             d[j] = math.lerp(d[j - 1], d[j], alpha);
-    //         }
-    //     }
-
-    //     return d[degree];
-    // }

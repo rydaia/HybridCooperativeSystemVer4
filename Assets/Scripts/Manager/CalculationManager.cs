@@ -80,9 +80,14 @@ public class CalculationManager : MonoBehaviour
         public float thetaT1, thetaT2, thetaP2d; // 目標点の姿勢角
 
         public float u1, u2, u3, u4; // 第一車両 前進速度
+
+        public float w1, w2, w3; // 第一車両 前進速度
+
         public float d1; 
 
         public int u1Index, u2Index;
+        public float u1Float, u2Float;
+
         public float rx1, ry1;
         public float rx2, ry2;
         public float cs1, cs2;
@@ -118,9 +123,11 @@ public class CalculationManager : MonoBehaviour
         // TrajectoryGenerator のインスタンス生成
         trajectoryGenerator = new TrajectoryGenerator(this); //　ここのthisはCalculationManagerクラスの自己インスタンス
 
+        psFinder = new PsFinder(vehicleRobotState, trajectoryGenerator, vehicleRobotParms, sim);
+
         bsplineGeometry = new BsplineGeometry();
 
-        psFinder = new PsFinder(vehicleRobotState, trajectoryGenerator, bsplineGeometry, vehicleRobotParms);
+        // psFinder = new PsFinder(vehicleRobotState, trajectoryGenerator, bsplineGeometry, vehicleRobotParms);
 
         // pathKinematics = new PathKinematics();
 
@@ -139,7 +146,7 @@ public class CalculationManager : MonoBehaviour
     {
 
         dt = 0.01f;
-        ds = 0.0001f;
+        ds = 0.001f; // 0.001[m], 1.0[mm]
 
         targetPointCtrl.Initialize();
 
@@ -148,9 +155,10 @@ public class CalculationManager : MonoBehaviour
 
         trajectoryGenerator.Initialize();
 
-        psFinder.Initialize();
-
         bsplineGeometry.Initialize(trajectoryGenerator, psFinder);
+
+        psFinder.Initialize(bsplineGeometry);
+
         pathKinematics.Initialize(trajectoryGenerator, bsplineGeometry);
         vehicleKinematics.Initialize(            
             targetPointState, 
@@ -190,7 +198,7 @@ public class CalculationManager : MonoBehaviour
             debugSmoothedPoints = cpSmooth.GetSmoothedPointsManaged();
             debugPastPoints   = cpQueue.GetPastPointsManaged();
             // debugFuturePoints = cpQueue.GetFuturePointsManaged();
-            debugPoints = bsplineGeometry.GetPointsManaged();
+            // debugPoints = bsplineGeometry.GetPointsManaged();
         }
     }
     
@@ -236,7 +244,7 @@ public class CalculationManager : MonoBehaviour
         // TrajectoryGeneratorクラス呼び出し
         trajectoryGenerator.GenerateBSplineCurve();
 
-        // if(targetPointState.getTime() > 20.01f)
+        // if(targetPointState.getTime() > 30.01f)
         // {
         //     Debug.Log($"time:{time}");
         //     sim.StopSimulation();
@@ -292,8 +300,17 @@ public class CalculationManager : MonoBehaviour
             data.u3 = vehicleRobotState.GetU3();
             data.u4 = vehicleRobotState.GetU4();
 
+
+            data.w1 = vehicleKinematics.GetW1();
+            data.w2 = vehicleKinematics.GetW2();
+            data.w3 = vehicleKinematics.GetW3();
+
             data.u1Index = psFinder.GetU1Index();
             data.u2Index = psFinder.GetU2Index();
+
+            data.u1Float = psFinder.GetU1();
+            data.u2Float = psFinder.GetU2();
+
             data.rx1 = bsplineGeometry.GetRx1();
             data.ry1 = bsplineGeometry.GetRy1();
             data.rx2 = bsplineGeometry.GetRx2();
@@ -362,7 +379,7 @@ public class CalculationManager : MonoBehaviour
             "{24:F6},{25:F6}," +
             "{26:F6},{27:F6}," +
             "{28:F6},{29:F6}," + 
-            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6},{38:F6},{39:F6}\n",
+            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6},{38:F6},{39:F6},{40:F6},{41:F6},{42:F6},{43:F6},{44:F6}\n",
             d.time,
             d.s,
             d.x, d.y,
@@ -374,6 +391,7 @@ public class CalculationManager : MonoBehaviour
             d.x2, d.y2,
             d.u1, d.u2, d.u3, d.u4,
             d.u1Index, d.u2Index,
+            d.u1Float, d.u2Float,
             d.rx1, d.ry1,
             d.d1rx1du11, d.d1ry1du11,
             d.d2rx1du12, d.d2ry1du12,
@@ -382,7 +400,8 @@ public class CalculationManager : MonoBehaviour
             d.rx2, d.ry2,
             d.cs1, d.cs2,
             d.thetaT1, d.thetaT2, d.thetaP2d,
-            d.d1
+            d.d1, 
+            d.w1, d.w2, d.w3
         );
     }
 
@@ -402,7 +421,7 @@ public class CalculationManager : MonoBehaviour
         cpQueue.Dispose();
         cpResample.Dispose();
         cpSmooth.Dispose();
-        bsplineGeometry.Dispose();
+        // bsplineGeometry.Dispose();
         psFinder.Dispose();
     }
 
@@ -411,7 +430,17 @@ public class CalculationManager : MonoBehaviour
         if(sim.enableDebugOutput)
         {
             // OutputCSV.WriteBSplineCurve(debugPastPoints, debugFuturePoints, debugMergedPoints, debugResampledPoints, debugSmoothedPoints, debugResampledPoints2, debugPoints, ds, targetPointState.getTime());
-            OutputCSV.WriteBSplineCurve(debugPastPoints, debugSmoothedPoints, debugResampledPoints, debugPoints, ds, targetPointState.getTime());
+            OutputCSV.WriteBSplineCurve(
+                debugPastPoints, 
+                debugSmoothedPoints, 
+                debugResampledPoints, 
+                bsplineGeometry.GetArrayU(),
+                bsplineGeometry.GetFrontPoints(), 
+                bsplineGeometry.GetRearPoints(), 
+                bsplineGeometry.GetFrontDerivative1(), 
+                bsplineGeometry.GetRearDerivative1(), 
+                ds, 
+                targetPointState.getTime());
         }
         else{
             Debug.Log("デバックモードがOFFのためファイル出力しません.");

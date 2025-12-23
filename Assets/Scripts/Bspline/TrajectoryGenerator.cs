@@ -39,27 +39,27 @@ public class TrajectoryGenerator
 
     public CalculationManager calc;
 
-    public Vector2[] points; // Bスプライン結果
-    // public NativeArray<float2> mergedNative;   // 
+    // 目標点の過去データ 毎フレーム更新
     public NativeArray<float2> pastNative;   // 
+    // Bスプライン近似させる時の制御点データ
+    // 判定条件を満たしたら更新
+    public NativeArray<float2> controlPointsNative;   // 
     public NativeArray<float2> resampledNative;   // 
-    public NativeArray<float2> smoothedNative; // 
-    // public NativeArray<float2> resampled2Native;   // 
-    public NativeArray<float2> bsplineNative; // 
-    public NativeArray<float2> bsplineDerivativeNative; // 
+    public NativeArray<float2> smoothedNative; // \
 
-
-    public float smax_past; 
+    public float smax_past;
     public float smax_future; 
 
     public int Np;
     public int Nf;
-    public int Nctrl;
+    public int Nre;
     public int Nsm;
     public int N;
     public int k;
 
     public float ds, dt;
+
+    private bool isUpdateCPdataFlag;
 
 
     // コントラスタ
@@ -73,43 +73,43 @@ public class TrajectoryGenerator
         this.ds = calc.ds;
         this.dt = calc.dt;
 
+        // 初回は必ず更新
+        isUpdateCPdataFlag = false;
+
         k = 5;
 
         smax_past = 20.0f; // [m]
         smax_future = 4.0f; // [m]
 
+        // 刻み幅 0.01[m] = 1[cm]
         Np = Mathf.FloorToInt(smax_past / 0.01f) + 1;
         Nf = Mathf.FloorToInt(smax_future / 0.01f);
 
         calc.cpQueue.Initialize(dt, calc);
+
+        calc.cpSmooth.Initialize(Np, calc);
+
         calc.cpResample.Initialize(smax_past);
 
         // 再サンプリングした際のサイズ
-        Nctrl = calc.cpResample.GetN();
+        Nre = calc.cpResample.GetN();
 
-        calc.cpSmooth.Initialize(Nctrl, calc);
-
-        // calc.cpQueue.Merge();
 
         // 近似後のサイズ
         N = Mathf.FloorToInt(smax_past / ds) + 1;
-        // N = Mathf.FloorToInt(smax_past / ds + smax_future / ds) + 1;
-
         // スムージング済みデータのサイズ
         Nsm = calc.cpSmooth.GetNsm();
 
         // mergedNative = new NativeArray<float2>(Np + Nf, Allocator.Persistent);
         pastNative = new NativeArray<float2>(Np, Allocator.Persistent);
+        controlPointsNative = new NativeArray<float2>(Np, Allocator.Persistent);
         smoothedNative = new NativeArray<float2>(Nsm, Allocator.Persistent);
-        resampledNative = new NativeArray<float2>(Nctrl, Allocator.Persistent);
-        bsplineNative = new NativeArray<float2>(N, Allocator.Persistent);
+        resampledNative = new NativeArray<float2>(Nre, Allocator.Persistent);
+        // bsplineNative = new NativeArray<float2>(N, Allocator.Persistent);
 
         Debug.Log($"過去データの総数:{Np}");
-        // Debug.Log($"未来データの総数:{Nf}");
-        // Debug.Log($"マージデータの総数:{Np+Nf}");
         Debug.Log($"smax_past:{smax_past}");
-        // Debug.Log($"smax_past:{smax_past}, smax_furure:{smax_future}");
-        Debug.Log($"距離等間隔に再サンプリングする際のデータ総数:{Nctrl}");
+        Debug.Log($"距離等間隔に再サンプリングする際のデータ総数:{Nre}");
         Debug.Log($"スムージングデータの総数:{Nsm}");
         Debug.Log($"bスプライン曲線の総数:{N}");
 
@@ -119,13 +119,19 @@ public class TrajectoryGenerator
     {
         // mergedNative = calc.cpQueue.GetMergedNative();
         pastNative = calc.cpQueue.GetPastNative();
-        smoothedNative = calc.cpSmooth.ApplyMovingAverage(pastNative);
+        controlPointsNative = calc.cpQueue.GetPastNative();
+        smoothedNative = calc.cpSmooth.ApplyMovingAverage(controlPointsNative);
         // Debug.Log($"a");
         resampledNative = calc.cpResample.ResampleByDistance(smoothedNative);
         // Debug.Log($"b");
         // bsplineNative = calc.bsplineGeometry.Approximate(resampledNative);
+        calc.bsplineGeometry.Approximate(GetResampledManaged());
+
+        calc.bsplineGeometry.Derivative1AllPoints();
+
+        calc.psFinder.RebuildCache();
         // Debug.Log($"c");
-        bsplineDerivativeNative = calc.bsplineGeometry.DerivativeAllPoints();
+        // calc.bsplineGeometry.Derivative1AllPoints();
         // Debug.Log($"d");
     }
 
@@ -136,81 +142,46 @@ public class TrajectoryGenerator
         {
             using (updateControlPointsMarker.Auto())
             {
-                UpdateControlPoints();
-                // ここで merged を取得
-                // mergedNative = calc.cpQueue.GetMergedNative();
-                pastNative = calc.cpQueue.GetPastNative();
-                // pastNative = calc.cpQueue.GetPastPointsManaged();
-
-                // Debug.Log($"pastNative[0]={pastNative[0]}");
-                // Debug.Log($"pastNative[1]={pastNative[1]}");
-                // Debug.Log($"pastNative[2]={pastNative[2]}");
-                // Debug.Log($"pastNative[3]={pastNative[3]}");
-                // Debug.Log($"pastNative[4]={pastNative[4]}");
-                // Debug.Log($"-----------------------------");
-                // Debug.Log($"pastNative[996]={pastNative[996]}");
-                // Debug.Log($"pastNative[997]={pastNative[997]}");
-                // Debug.Log($"pastNative[998]={pastNative[998]}");
-                // Debug.Log($"pastNative[999]={pastNative[999]}");
-                // Debug.Log($"pastNative[1000]={pastNative[1000]}");
-
+                // 過去データは更新し続ける
+                UpdatePastData();
             }
 
-            using (smoothControlPointsMarker.Auto())
+            // 制御点として用いるデータは距離判定で決める
+            // 現在の第一連結点の座標(x1, y1)が曲線の端の点と近くなった時、
+            // 判定条件を満たした時、その時の過去データを制御点データとして更新する
+            DetermineUpdateControlePoint();
+
+            if(GetIsUpdateCPFlag())
             {
-                // スムージング Burst化+Job
-                // smoothedNative = calc.cpSmooth.ApplyMovingAverage(resampledNative);
-                smoothedNative = calc.cpSmooth.ApplyMovingAverage(pastNative);
+                Debug.Log($"Bスプライン曲線を再生成します.");
+                UpdateControlPoints();  
 
-                // Debug.Log($"smoothedNative[0]={smoothedNative[0]}");
-                // Debug.Log($"smoothedNative[1]={smoothedNative[1]}");
-                // Debug.Log($"smoothedNative[2]={smoothedNative[2]}");
-                // Debug.Log($"smoothedNative[3]={smoothedNative[3]}");
-                // Debug.Log($"smoothedNative[4]={smoothedNative[4]}");
-            }
+                using (smoothControlPointsMarker.Auto())
+                {
+                    smoothedNative = calc.cpSmooth.ApplyMovingAverage(controlPointsNative);
+                }
 
-            using (resampleControlPointsMarker.Auto())
-            {
-                resampledNative = calc.cpResample.ResampleByDistance(smoothedNative);
+                using (resampleControlPointsMarker.Auto())
+                {
+                    resampledNative = calc.cpResample.ResampleByDistance(smoothedNative);
+                }
 
-                // Debug.Log($"resampledNative[0]={resampledNative[0]}");
-                // Debug.Log($"resampledNative[1]={resampledNative[1]}");
-                // Debug.Log($"resampledNative[2]={resampledNative[2]}");
-                // Debug.Log($"resampledNative[3]={resampledNative[3]}");
-                // Debug.Log($"resampledNative[4]={resampledNative[4]}");
-            }
+                // Bスプライン曲線 近似
+                using (BSplineInterpolatorMarker.Auto())
+                {
+                    calc.bsplineGeometry.Approximate(GetResampledManaged());
+                }
 
-            // Bスプライン曲線 近似
-            using (BSplineInterpolatorMarker.Auto())
-            {
-                // Bスプライン補完
-                bsplineNative = calc.bsplineGeometry.Approximate(resampledNative);
-
-                // Debug.Log($"bsplineNative[0]={bsplineNative[0]}");
-                // Debug.Log($"bsplineNative[1]={bsplineNative[1]}");
-                // Debug.Log($"bsplineNative[2]={bsplineNative[2]}");
-                // Debug.Log($"bsplineNative[3]={bsplineNative[3]}");
-                // Debug.Log($"bsplineNative[4]={bsplineNative[4]}");
-
-            }
-
-            using(BSplineDerivativeMarker.Auto())
-            {
-                bsplineDerivativeNative = calc.bsplineGeometry.DerivativeAllPoints();
-                // Debug.Log($"bsplineNative[0]:{bsplineNative[0]}");
-                // Debug.Log($"bsplineDerivativeNative[0]:{bsplineDerivativeNative[0]}");
-                // Debug.Log($"bsplineNative[1]:{bsplineNative[1]}");
-                // Debug.Log($"bsplineDerivativeNative[1]:{bsplineDerivativeNative[1]}");
-                // Debug.Log($"bsplineNative[100000]:{bsplineNative[100000]}");
-                // Debug.Log($"bsplineDerivativeNative[100000]:{bsplineDerivativeNative[100000]}");
+                using(BSplineDerivativeMarker.Auto())
+                {
+                    calc.bsplineGeometry.Derivative1AllPoints();
+                }
             }
         }
     }
 
-    public void UpdateControlPoints()
+    public void UpdatePastData()
     {
-
-
         Vector2 Tp = calc.targetPointState.GetPosition();
         float theta = calc.targetPointState.getTheta();
         float v1 = calc.targetPointState.getV1();
@@ -219,14 +190,59 @@ public class TrajectoryGenerator
         calc.cpQueue.Update(Tp, theta, v1, kappa);
     }
 
-    public NativeArray<float2> GetBsplineNative()
+    // 現在のpastデータをcontrolePointsデータにコピー
+    private void UpdateControlPoints()
     {
-        return bsplineNative;
+
+        pastNative = calc.cpQueue.GetPastNative();
+
+        for (int i = 0; i < Np; i++)
+        {
+            controlPointsNative[i] = pastNative[i];
+        }
     }
 
-    public NativeArray<float2> GetBsplineDerivativeNative()
+    // 制御点を更新するかしない判定
+    private void DetermineUpdateControlePoint()
     {
-        return bsplineDerivativeNative;
+
+        //現在の第一連結点の座標(x1,y1)を取得
+        Vector2 pos = calc.vehicleRobotState.GetMidpointBetweenRearWheelsOfFV();
+
+        // 現在の制御点データの端点を取得
+        Vector2 pos1 = controlPointsNative[GetNp() - 1];
+
+        float diff = math.distance(pos, pos1);
+
+        float eps = 0.5f; // 0.1[m]
+
+        if(diff < eps)
+        {
+            SetIsUpdateCPdataFlag(true);
+        }
+        else
+        {
+            SetIsUpdateCPdataFlag(false);
+        }
+    }
+
+    public float2[] GetResampledManaged()
+    {
+        float2[] arr = new float2[Nre];
+        for (int i = 0; i < Nre; i++)
+            arr[i] = resampledNative[i];
+        return arr;
+    }
+
+
+    public bool GetIsUpdateCPFlag()
+    {
+        return isUpdateCPdataFlag;
+    }
+
+    public void SetIsUpdateCPdataFlag(bool v)
+    {
+        isUpdateCPdataFlag = v;
     }
 
 
@@ -234,6 +250,8 @@ public class TrajectoryGenerator
     {
         return N;
     }
+
+
 
     public int GetNp()
     {
@@ -252,7 +270,7 @@ public class TrajectoryGenerator
 
     public int GetNctrl()
     {
-        return Nctrl;
+        return Nre;
     }
 
     public float GetDs()

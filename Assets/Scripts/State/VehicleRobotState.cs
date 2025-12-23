@@ -115,13 +115,18 @@ public class VehicleRobotState
         float maxPhi2 = 0.610865f; // 35度
         float minPhi2 = -0.610865f; // 35度        float maxPhi1 = 0.610865f; // 35度
 
+        
+
         // 結果を State に反映する
         SetTime(runge.x_new[0]);
         SetX1(runge.x_new[1]); 
         SetY1(runge.x_new[2]); 
+        // SetPhi1(ClampSteer(runge.x_new[3]));
         SetPhi1(ClampSteer(runge.x_new[3]));
+
         SetTheta1(runge.x_new[4]);
         SetPhi2(ClampSteer(runge.x_new[5]));
+        // SetPhi2(ClampSteer(runge.x_new[5]));
         SetTheta2(runge.x_new[6]);
         SetTheta3(runge.x_new[7]);
 

@@ -8,12 +8,13 @@ public static class OutputCSV
 {
     public static void WriteBSplineCurve(
         float2[] past,
-        // float2[] future,
-        // float2[] merge,
         float2[] smooth,
         float2[] resample,
-        // float2[] resample2,
-        float2[] bspline,
+        float[] arrayU,
+        float2[] frontBspline,
+        float2[] rearBspline,
+        float2[] frontDerivative1,
+        float2[] rearDerivative1,
         float ds,
         float time)
     {
@@ -26,26 +27,28 @@ public static class OutputCSV
             writer.WriteLine(
                 "s," +
                 "past.x,past.y," +
-                // "future.x,future.y," +
-                // "merge.x,merge.y," +
                 "smooth.x,smooth.y," +
                 "resample.x,resample.y," +
-                // "resample2.x,resample2.y," +
-                "bspline.x,bspline.y," +
+                "index," +
+                "u," +
+                "frontBspline.x,frontBspline.y," +
+                "rearBspline.x,rearBspline.y," +
+                "frontDerivative1.x,frontDerivative1.y," +
+                "rearDerivative1.x,rearDerivative1.y," +
                 "dist_smooth(dist from next)," +
                 "dist_resample(dist from next)," +
-                // "dist_resample2(dist from next)," +
-                "dist_bspline(dist from next)"
+                "dist_bspline(dist from next)," +
+                "cs1"
             );
 
             int n = Mathf.Max(
                 SafeLen(past),
-                // SafeLen(future),
-                // SafeLen(merge),
                 SafeLen(resample),
                 SafeLen(smooth),
-                // SafeLen(resample2),
-                SafeLen(bspline)
+                SafeLen(frontBspline),
+                SafeLen(rearBspline),
+                SafeLen(frontDerivative1),
+                SafeLen(rearDerivative1)
             );
 
             for (int i = 0; i < n; i++)
@@ -53,32 +56,45 @@ public static class OutputCSV
                 float s = i * ds;
 
                 float2 pPast     = SafeGet(past, i);
-                // float2 pFuture   = SafeGet(future, i);
-                // float2 pMerge    = SafeGet(merge, i);
                 float2 pResample = SafeGet(resample, i);
                 float2 pSmooth   = SafeGet(smooth, i);
-                // float2 pResample2 = SafeGet(resample2, i);
-                float2 pBS       = SafeGet(bspline, i);
+                float2 pFB       = SafeGet(frontBspline, i);
+                float2 pRB       = SafeGet(rearBspline, i);
+                float2 pFD       = SafeGet(frontDerivative1, i);
+                float2 pRD       = SafeGet(rearDerivative1, i);
 
                 // 距離計算（安全）
                 float dResample = DistSafe(resample, i);
                 float dSmooth   = DistSafe(smooth, i);
-                // float dResample2 = DistSafe(resample2, i);
-                float dBS       = DistSafe(bspline, i);
+                float dFB       = DistSafe(frontBspline, i);
+
+                float u = arrayU[i];
+
+        //         float _squaredD1rx1du11 = Mathf.Pow(pFD.x,2);
+        //         float _squaredD1ry1du11 = Mathf.Pow(pFD.y,2);
+
+        //         float _formulaOfD1ry1du11MulD2rx1du12 = pFD.y*pDerivative2.x;
+        //         float _formulaOfD1rx1du11MulD2ry1du12 = pDerivative1.x*pDerivative2.y;
+
+        //         float _formulaOfSquaredD1rx1du11PlusSquaredD1ry1du11 = _squaredD1rx1du11 + _squaredD1ry1du11;
+
+        //         float frontCs1 =  -((_squaredD1ry1du11*(_formulaOfD1ry1du11MulD2rx1du12 - _formulaOfD1rx1du11MulD2ry1du12)) / Mathf.Pow(_formulaOfSquaredD1rx1du11PlusSquaredD1ry1du11, 2.5f))
+        // + (_squaredD1rx1du11*(-(_formulaOfD1ry1du11MulD2rx1du12) + _formulaOfD1rx1du11MulD2ry1du12)) / Mathf.Pow(_formulaOfSquaredD1rx1du11PlusSquaredD1ry1du11, 2.5f);
 
                 writer.WriteLine(
                     $"{F(s)}," +
                     $"{F(pPast.x)},{F(pPast.y)}," +
-                    // $"{F(pFuture.x)},{F(pFuture.y)}," +
-                    // $"{F(pMerge.x)},{F(pMerge.y)}," +
                     $"{F(pSmooth.x)},{F(pSmooth.y)}," +
                     $"{F(pResample.x)},{F(pResample.y)}," +
-                    // $"{F(pResample2.x)},{F(pResample2.y)}," +
-                    $"{F(pBS.x)},{F(pBS.y)}," +
+                    $"{F(i)}," +
+                    $"{F(u)}," +
+                    $"{F(pFB.x)},{F(pFB.y)}," +
+                    $"{F(pRB.x)},{F(pRB.y)}," +
+                    $"{F(pFD.x)},{F(pFD.y)}," +
+                    $"{F(pRD.x)},{F(pRD.y)}," +
                     $"{F(dSmooth)}," +
                     $"{F(dResample)}," +
-                    // $"{F(dResample2)}," +
-                    $"{F(dBS)}"
+                    $"{F(dFB)}"
                 );
             }
         }

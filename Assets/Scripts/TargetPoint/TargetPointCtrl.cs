@@ -79,19 +79,19 @@ public class TargetPointCtrl : MonoBehaviour
     public void Initialize()
     {
 
-        // inputMode = InputMode.Keyboard;
-        inputMode = InputMode.G923;
+        inputMode = InputMode.Keyboard;
+        // inputMode = InputMode.G923;
 
         minCruiseSpeed = 1.0f; // 最低巡航速度
         brakeDecel = 2.0f;     // ブレーキ減速率
 
-        maxV1 = 3.0f;          // 最大前進スピード
+        maxV1 = 3.0f;          // 最大前進スピード m/s
         minV1 = -3.0f;         // 最大後退スピード
-        driveAcceleration = 0.5f;  // 加速・減速量
+        driveAcceleration = 0.1f;  // 加速・減速量
 
-        maxV2 = 1.0f;          // 最大旋回スピード [rad/s]
-        minV2 = -1.0f;         // 最大旋回スピード [rad/s]
-        steerAcceleration = 0.25f;  // 加速・減速量
+        maxV2 = 0.12f;          // 最大旋回スピード [rad/s]
+        minV2 = -0.12f;         // 最大旋回スピード [rad/s]
+        steerAcceleration = 0.01f;  // 加速・減速量
 
         InputV2Flag = false;
         nextDriveMode = TargetPointMode.Forward;
@@ -101,16 +101,22 @@ public class TargetPointCtrl : MonoBehaviour
     {
         HandleModeChange();
 
-        if (inputMode == InputMode.G923)
-        {
-            HandleDriveInput_G923();
-            HandleSteerInput_G923();
-        }
-        else
-        {
-            HandleDriveInput();
-            HandleSteerInput();
-        }
+        HandleDriveInput();
+        HandleDriveInput_Pad();
+        HandleSteerInput_Pad();
+        HandleSteerInput();
+
+
+        // if (inputMode == InputMode.G923)
+        // {
+        //     HandleDriveInput_G923();
+        //     HandleSteerInput_G923();
+        // }
+        // else
+        // {
+        //     HandleDriveInput();
+        //     HandleSteerInput();
+        // }
 
         calc.targetPointState.UpdateTargetPoint(_v1);
     }
@@ -253,6 +259,59 @@ public class TargetPointCtrl : MonoBehaviour
         calc.targetPointState.setV1(_v1);
     }
 
+    private void HandleDriveInput_Pad()
+    {
+        var pad = Gamepad.current;
+        if (pad == null) return;
+
+        float ry = pad.rightStick.ReadValue().y; // 前:+1 / 後:-1
+        float dt = 0.01f;
+
+        // 1軸 → アクセル・ブレーキ分解
+        float throttle = Mathf.Max( ry, 0f);
+        float brake    = Mathf.Max(-ry, 0f);
+
+        // 現在速度
+        _v1 = calc.targetPointState.getV1();
+
+        var mode = calc.targetPointState.GetMode();
+
+        if (mode == TargetPointMode.Forward)
+        {
+            // ===== アクセル =====
+            if (throttle > 0.01f)
+            {
+                _v1 += throttle * driveAcceleration * dt;
+            }
+            else
+            {
+                // 離したら自然減速
+                _v1 -= driveAcceleration * dt;
+            }
+
+            // ===== ブレーキ =====
+            if (brake > 0.01f)
+            {
+                _v1 -= brake * brakeDecel * dt;
+            }
+
+            // ===== 制約 =====
+            if (brake <= 0.01f)
+            {
+                // ブレーキを踏んでいない限り最低巡航速度
+                _v1 = Mathf.Max(_v1, minCruiseSpeed);
+            }
+            else
+            {
+                // ブレーキ中は停止OK
+                _v1 = Mathf.Max(_v1, 0f);
+            }
+        }
+
+        _v1 = Mathf.Clamp(_v1, 0f, maxV1);
+        calc.targetPointState.setV1(_v1);
+    }
+
 
     // スピードが0の時を停止状態とする.
     private void HandleDriveInput()
@@ -279,7 +338,8 @@ public class TargetPointCtrl : MonoBehaviour
             else if (Input.GetKey(KeyCode.DownArrow))
             {
                 // ブレーキ：減速（0未満にはしない）
-                _v1 -= driveAcceleration * 0.01f;
+                float brakePower = 0.5f;
+                _v1 -= brakePower * 0.01f;
                 if (_v1 < 0) _v1 = 0;
             }
             else
@@ -288,9 +348,9 @@ public class TargetPointCtrl : MonoBehaviour
                 // 0.1以下の場合は0.1になるように加速
                 _v1 -= driveAcceleration * Time.deltaTime;
 
-                if (_v1 < 0.1f)
+                if (_v1 < 1.388888f)
                 {
-                    _v1 = 0.1f;
+                    _v1 = 1.388888f;
                 }
             }
         }
@@ -342,45 +402,163 @@ public class TargetPointCtrl : MonoBehaviour
         calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
     }
 
-
     private void HandleSteerInput()
     {
-        _v2 = calc.targetPointState.getV2();
+        float targetV2 = 0f;
+        float steerResponse = 5.0f;
 
         if (Input.GetKey(KeyCode.LeftArrow))
-        {
-            // _v2 += steerAcceleration * Time.deltaTime;
-            InputV2Flag = true;
-            _v2 += steerAcceleration * 0.01f;
-        }
+            targetV2 = maxV2;
         else if (Input.GetKey(KeyCode.RightArrow))
+            targetV2 = minV2;
+
+        // なめらかに追従させる（超重要）
+        _v2 = Mathf.Lerp(
+            calc.targetPointState.getV2(),
+            targetV2,
+            steerResponse * 0.01f
+        );
+
+        calc.targetPointState.setV2(_v2);
+    }
+
+
+
+    // private void HandleSteerInput()
+    // {
+    //     _v2 = calc.targetPointState.getV2();
+
+    //     if (Input.GetKey(KeyCode.LeftArrow))
+    //     {
+    //         // _v2 += steerAcceleration * Time.deltaTime;
+    //         InputV2Flag = true;
+    //         _v2 += steerAcceleration * 0.01f;
+    //     }
+    //     else if (Input.GetKey(KeyCode.RightArrow))
+    //     {
+    //         // _v2 -= steerAcceleration * Time.deltaTime;
+    //         InputV2Flag = true;
+    //         _v2 -= steerAcceleration * 0.01f;
+    //     }
+    //     else
+    //     {
+    //         InputV2Flag = false;
+
+    //         if (_v2 > 0)
+    //         {
+    //             // _v2 -= steerAcceleration * Time.deltaTime;
+    //             _v2 -= steerAcceleration * 0.01f;
+
+    //             if (_v2 < 0) _v2 = 0;
+    //         }
+    //         else if (_v2 < 0)
+    //         {
+    //             _v2 += steerAcceleration * 0.01f;
+    //             // _v2 += steerAcceleration * Time.deltaTime;
+
+    //             if (_v2 > 0) _v2 = 0;
+    //         }
+    //     }
+
+    //     calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
+    // }
+
+    private void HandleSteerInput_Pad()
+    {
+        var pad = Gamepad.current;
+        if (pad == null) return;
+
+        float lx = pad.leftStick.ReadValue().x; // 左:-1 / 右:+1
+        float dt = 0.01f; // 今までと合わせるなら固定でOK
+
+        _v2 = calc.targetPointState.getV2();
+
+        // デッドゾーン
+        if (Mathf.Abs(lx) < 0.1f)
+            lx = 0f;
+
+        if (lx < 0f)
         {
-            // _v2 -= steerAcceleration * Time.deltaTime;
+            // 左入力
             InputV2Flag = true;
-            _v2 -= steerAcceleration * 0.01f;
+            _v2 += steerAcceleration * Mathf.Abs(lx) * dt;
+        }
+        else if (lx > 0f)
+        {
+            // 右入力
+            InputV2Flag = true;
+            _v2 -= steerAcceleration * Mathf.Abs(lx) * dt;
         }
         else
         {
+            // 入力なし → 自然減衰
             InputV2Flag = false;
 
-            if (_v2 > 0)
+            if (_v2 > 0f)
             {
-                // _v2 -= steerAcceleration * Time.deltaTime;
-                _v2 -= steerAcceleration * 0.01f;
-
-                if (_v2 < 0) _v2 = 0;
+                _v2 -= steerAcceleration * dt;
+                if (_v2 < 0f) _v2 = 0f;
             }
-            else if (_v2 < 0)
+            else if (_v2 < 0f)
             {
-                _v2 += steerAcceleration * 0.01f;
-                // _v2 += steerAcceleration * Time.deltaTime;
-
-                if (_v2 > 0) _v2 = 0;
+                _v2 += steerAcceleration * dt;
+                if (_v2 > 0f) _v2 = 0f;
             }
         }
 
-        calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
+        _v2 = Mathf.Clamp(_v2, minV2, maxV2);
+        calc.targetPointState.setV2(_v2);
     }
+
+
+
+    // private void HandleSteerInput_Pad()
+    // {
+    //     var pad = Gamepad.current;
+    //     if (pad == null) return;
+
+    //     float lx = pad.leftStick.ReadValue().x; // 左:+1 / 右:-1
+    //     float dt = 0.01f;
+
+
+    //     _v2 = calc.targetPointState.getV2();
+
+    //     if (Input.GetKey(KeyCode.LeftArrow))
+    //     {
+    //         // _v2 += steerAcceleration * Time.deltaTime;
+    //         InputV2Flag = true;
+    //         _v2 += steerAcceleration * 0.01f;
+    //     }
+    //     else if (Input.GetKey(KeyCode.RightArrow))
+    //     {
+    //         // _v2 -= steerAcceleration * Time.deltaTime;
+    //         InputV2Flag = true;
+    //         _v2 -= steerAcceleration * 0.01f;
+    //     }
+    //     else
+    //     {
+    //         InputV2Flag = false;
+
+    //         if (_v2 > 0)
+    //         {
+    //             // _v2 -= steerAcceleration * Time.deltaTime;
+    //             _v2 -= steerAcceleration * 0.01f;
+
+    //             if (_v2 < 0) _v2 = 0;
+    //         }
+    //         else if (_v2 < 0)
+    //         {
+    //             _v2 += steerAcceleration * 0.01f;
+    //             // _v2 += steerAcceleration * Time.deltaTime;
+
+    //             if (_v2 > 0) _v2 = 0;
+    //         }
+    //     }
+
+    //     _v2 = Mathf.Clamp(_v2, minV2, maxV2);
+
+    //     calc.targetPointState.setV2(_v2);
+    // }
 
     public float GetMaxSpeed() => maxV1;
     public bool GetInPutV2Flag() => InputV2Flag;

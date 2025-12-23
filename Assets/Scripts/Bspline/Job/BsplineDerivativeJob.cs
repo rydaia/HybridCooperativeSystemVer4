@@ -4,12 +4,16 @@ using Unity.Jobs;
 using Unity.Mathematics;
 
 [BurstCompile(FloatMode = FloatMode.Fast, FloatPrecision = FloatPrecision.Low)]
-public struct BSplineDerivative1Job : IJobParallelFor
+public struct BSplineDerivativeJob : IJobParallelFor
 {
     [ReadOnly] public NativeArray<float2> ctrl; // beta1
     [ReadOnly] public NativeArray<float> knots; // knots
 
     public int degree; // k-1
+
+    public float u_min_ori;
+    public float u_max_ori;
+
     public float u_min;
     public float u_max;
     
@@ -19,15 +23,20 @@ public struct BSplineDerivative1Job : IJobParallelFor
     public void Execute(int idx)
     {
         float t = (float)idx / (results.Length - 1); // 0.00001刻み
-        float u = math.lerp(u_min, u_max, t);
+        // インデックスを元の曲線のuに対応させる
+        float u = math.lerp(u_min_ori, u_max_ori, t);
 
-        results[idx] = DeBoor(ctrl, knots, u, degree);
+        // 微分曲線のuの範囲内になるようにクランプ
+        float u1 = math.clamp(u, u_min, u_max);
+
+        results[idx] = DeBoor(ctrl, knots, u1, degree);
     }
 
-    private float2 DeBoor(NativeArray<float2> c, NativeArray<float> K, float u, int k)
+    private float2 DeBoor(NativeArray<float2> c, NativeArray<float> K, float u1, int k)
     {
+        // 制御点beta1やbeta2の長さ
         int n = c.Length - 1;
-        int span = FindSpan(u, k, n, K);
+        int span = FindSpan(u1, k, n, K);
 
         // Burst OK: stackalloc
         // Span<float2> d = stackalloc float2[6]; // 最大5+1くらいあれば十分
@@ -43,8 +52,10 @@ public struct BSplineDerivative1Job : IJobParallelFor
                 for (int j = k; j >= r; j--)
                 {
                     int idx = span - k + j;
+                    // float denom = K[idx + k - r + 1] - K[idx];
                     float denom = K[idx + k - r + 1] - K[idx];
-                    float alpha = (u - K[idx]) / denom;
+                    float alpha = (denom == 0f) ? 0f : (u1 - K[idx]) / denom;
+                    // float alpha = (u1 - K[idx]) / denom;
                     d[j] = math.lerp(d[j - 1], d[j], alpha);
                 }
             }
@@ -53,22 +64,41 @@ public struct BSplineDerivative1Job : IJobParallelFor
 
     }
 
-    private int FindSpan(float u, int degree, int n, NativeArray<float> knots)
+    private int FindSpan(float u, int degree, int n, NativeArray<float> K)
     {
-        if (u >= knots[n + 1]) return n;
+        int m = K.Length - 1;
+        if (u >= K[m - degree]) return n;
 
         int low = degree;
         int high = n + 1;
         int mid = (low + high) / 2;
 
-        while (u < knots[mid] || u >= knots[mid + 1])
+        while (u < K[mid] || u >= K[mid + 1])
         {
-            if (u < knots[mid]) high = mid;
+            if (u < K[mid]) high = mid;
             else low = mid;
             mid = (low + high) / 2;
         }
         return mid;
     }
+
+
+    // private int FindSpan(float u1, int degree, int n, NativeArray<float> knots)
+    // {
+    //     if (u1 >= knots[n + 1]) return n;
+
+    //     int low = degree;
+    //     int high = n + 1;
+    //     int mid = (low + high) / 2;
+
+    //     while (u1 < knots[mid] || u1 >= knots[mid + 1])
+    //     {
+    //         if (u1 < knots[mid]) high = mid;
+    //         else low = mid;
+    //         mid = (low + high) / 2;
+    //     }
+    //     return mid;
+    // }
 }
 
 [BurstCompile]
@@ -99,10 +129,25 @@ public struct EvaluateDerivativeJob : IJob
     public int degree;                              // k-1, k-2, k-3, k-4
     public float u;
 
+    public float u_min;
+    public float u_max;
+
     [WriteOnly] public NativeArray<float2> result;
 
     public void Execute()
     {
+        // result[0] = DeBoor(beta, knots, u, degree);
+
+        // float uClamped = math.clamp(u, u_min, u_max);;
+
+        // 有効範囲外なら「0」か「前回値」
+        if (u < u_min || u > u_max)
+        {
+            result[0] = float2.zero;
+            return;
+        }
+
+        // result[0] = DeBoor(beta, knots, uClamped, degree);
         result[0] = DeBoor(beta, knots, u, degree);
     }
 
@@ -140,25 +185,49 @@ public struct EvaluateDerivativeJob : IJob
         }
     }
 
-    // -------- FindSpan（縮小ノット対応版） --------
     private int FindSpan(float u, int degree, int n, NativeArray<float> K)
     {
-        int m = K.Length - 1;
+        // 左端
+        if (u <= K[degree])
+            return degree;
 
-        // 右端境界処理
-        if (u >= K[m - degree])
+        // 右端
+        if (u >= K[n + 1])
             return n;
 
         int low  = degree;
         int high = n + 1;
-        int mid  = (low + high) / 2;
+        int mid  = (low + high) >> 1;
 
         while (u < K[mid] || u >= K[mid + 1])
         {
             if (u < K[mid]) high = mid;
             else            low  = mid;
-            mid = (low + high) / 2;
+            mid = (low + high) >> 1;
         }
         return mid;
     }
+
+
+    // // -------- FindSpan（縮小ノット対応版） --------
+    // private int FindSpan(float u, int degree, int n, NativeArray<float> K)
+    // {
+    //     int m = K.Length - 1;
+
+    //     // 右端境界処理
+    //     if (u >= K[m - degree])
+    //         return n;
+
+    //     int low  = degree;
+    //     int high = n + 1;
+    //     int mid  = (low + high) / 2;
+
+    //     while (u < K[mid] || u >= K[mid + 1])
+    //     {
+    //         if (u < K[mid]) high = mid;
+    //         else            low  = mid;
+    //         mid = (low + high) / 2;
+    //     }
+    //     return mid;
+    // }
 }
