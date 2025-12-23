@@ -13,9 +13,9 @@ public class VehicleParameters
         // L2 = 0.81f * scale;
         // L3 = 0.27f * scale;
 
-        L1 = 3.0f;
+        L1 = 3.45f;
         L2 = 10.0f;
-        L3 = 3.0f;
+        L3 = 3.45f;
     }
 
     public float GetL1() => L1;

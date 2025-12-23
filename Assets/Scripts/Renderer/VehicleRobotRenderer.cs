@@ -14,12 +14,12 @@ public class VehicleRobotRenderer : MonoBehaviour
     public Transform FirstVehicle; 
     public Transform steerFROfFV, steerFLOfFV; 
     public Transform wheelFROfFV, wheelFLOfFV;   // タイヤの見た目（メッシュ）
-    public Transform wheelRROfFV, wheelRLOfFV;   // タイヤの見た目（メッシュ）
+    public Transform wheelRearOfFV;   // タイヤの見た目（メッシュ）
 
     [Header("SecondVehicle")]
     public Transform SecondVehicle; 
     public Transform steerRROfSV, steerRLOfSV; 
-    public Transform wheelFROfSV, wheelFLOfSV;   // タイヤの見た目（メッシュ）
+    public Transform wheelFrontOfSV;   // タイヤの見た目（メッシュ）
     public Transform wheelRROfSV, wheelRLOfSV;   // タイヤの見た目（メッシュ）
 
     [Header("TruckBed")]
@@ -54,11 +54,11 @@ public class VehicleRobotRenderer : MonoBehaviour
     // 第一車両のタイヤ 回転角　初期変数
     private Quaternion steerFLOfFVLocalRotInitial, steerFROfFVLocalRotInitial; 
     private Quaternion wheelFROfFVLocalRotInitial, wheelFLOfFVLocalRotInitial; // 前輪左右
-    private Quaternion wheelRROfFVLocalRotInitial, wheelRLOfFVLocalRotInitial; // 後輪左右
+    private Quaternion wheelRearOfFVLocalRotInitial; // 後輪左右
 
     // 第二車両のタイヤ 初期変数
     private Quaternion steerRLOfSVLocalRotInitial, steerRROfSVLocalRotInitial;
-    private Quaternion wheelFROfSVLocalRotInitial, wheelFLOfSVLocalRotInitial; // 前輪左右
+    private Quaternion wheelFrontOfSVLocalRotInitial; // 前輪左右
     private Quaternion wheelRROfSVLocalRotInitial, wheelRLOfSVLocalRotInitial; // 後輪左右
 
     private float firstVehicleSpeed;
@@ -73,6 +73,26 @@ public class VehicleRobotRenderer : MonoBehaviour
     public float scale;
 
     void Awake() {
+        // nullチェック
+        if (   FirstVehicle==null
+            || TruckBed==null
+            || SecondVehicle==null
+            || steerFLOfFV==null
+            || steerFROfFV==null
+            || wheelFLOfFV==null
+            || wheelFROfFV==null
+            || wheelRearOfFV==null
+            || steerRLOfSV==null
+            || steerRROfSV==null
+            || wheelFrontOfSV==null
+            || wheelRLOfSV==null
+            || wheelRROfSV==null)
+        {
+            enabled=false;
+            Debug.LogError("null", this);
+            return;
+            }
+
         if (setFixedTimestepTo001) Time.fixedDeltaTime = 0.01f; // Project Settings > Time でも設定可
         if (vehicleRenderer != null) mat = vehicleRenderer.material;
 
@@ -83,15 +103,13 @@ public class VehicleRobotRenderer : MonoBehaviour
         wheelFROfFVLocalRotInitial = wheelFROfFV.localRotation;
         wheelFLOfFVLocalRotInitial = wheelFLOfFV.localRotation;
 
-        wheelRROfFVLocalRotInitial = wheelRROfFV.localRotation;
-        wheelRLOfFVLocalRotInitial = wheelRLOfFV.localRotation;
+        wheelRearOfFVLocalRotInitial = wheelRearOfFV.localRotation;
 
         // 第二車両
         steerRLOfSVLocalRotInitial = steerRLOfSV.localRotation;
         steerRROfSVLocalRotInitial = steerRROfSV.localRotation;
 
-        wheelFROfSVLocalRotInitial = wheelFROfSV.localRotation;
-        wheelFLOfSVLocalRotInitial = wheelFLOfSV.localRotation;
+        wheelFrontOfSVLocalRotInitial = wheelFrontOfSV.localRotation;
 
         wheelRROfSVLocalRotInitial = wheelRROfSV.localRotation;
         wheelRLOfSVLocalRotInitial = wheelRLOfSV.localRotation;
@@ -103,7 +121,7 @@ public class VehicleRobotRenderer : MonoBehaviour
         scale = 1f;
         wheelAngleOfFV = 0f;
         wheelAngleOfSV = 0f;
-        wheelRadius = 0.55f; // [m]
+        wheelRadius = 0.575f; // [m]
 
         InitialPositions();
 
@@ -135,6 +153,8 @@ public class VehicleRobotRenderer : MonoBehaviour
     // 毎フレーム
     void ComputePositionAndRotation()
     {
+        if (calc == null || calc.vehicleRobotState == null) return;
+
         float x1 = calc.vehicleRobotState.GetX1();
         float y1 = calc.vehicleRobotState.GetY1();
         float x2 = calc.vehicleRobotState.GetX2();
@@ -151,26 +171,26 @@ public class VehicleRobotRenderer : MonoBehaviour
         secondVehicleSpeed = calc.vehicleRobotState.GetU4(); // ここは本当に u4 ？（u1,u2,u3 だけなら見直し推奨）
 
         // 先頭車両
-        Vector3 offsetLocalForFV = new Vector3(1.5f, 0f, 0f);
+        Vector3 offsetLocalForFV = new Vector3(0f, 0f, 0f);
 
         float firstVehicleDeg  = -theta1 * Mathf.Rad2Deg;
         firstVehicleRotation  = Quaternion.Euler(0f, firstVehicleDeg, 0f);
-        Vector3 fvBase = new Vector3(x1, 0f, y1) * scale;
+        Vector3 fvBase = new Vector3(x1, 0.575f, y1) * scale;
         firstVehiclePosition  = fvBase + firstVehicleRotation  * (offsetLocalForFV * scale);
         
 
         // 後方車両
-        Vector3 offsetLocalForSV = new Vector3(-1.5f, 0f, 0f);
+        Vector3 offsetLocalForSV = new Vector3(-0f, 0f, 0f);
 
         float secondVehicleDeg = -theta3 * Mathf.Rad2Deg;
         secondVehicleRotation = Quaternion.Euler(0f, secondVehicleDeg, 0f);
-        Vector3 svBase = new Vector3(x2, 0f, y2) * scale;
+        Vector3 svBase = new Vector3(x2, 0.575f, y2) * scale;
         secondVehiclePosition = svBase + secondVehicleRotation * (offsetLocalForSV * scale);
         
         // 荷台
         float truckBedDeg      = -theta2 * Mathf.Rad2Deg;
         truckBedRotation      = Quaternion.Euler(0f, truckBedDeg, 0f);
-        truckBedPosition = new Vector3(x3, 0f, y3) * scale;
+        truckBedPosition = new Vector3(x3, 1.54f, y3) * scale;
 
         // ステア
         float steerDegOfFV = -phi1 * Mathf.Rad2Deg;
@@ -181,11 +201,11 @@ public class VehicleRobotRenderer : MonoBehaviour
         // ホイール
         float wheelOmegaOfFV = (firstVehicleSpeed  / wheelRadius) * Time.fixedDeltaTime;
         wheelAngleOfFV += -wheelOmegaOfFV * Mathf.Rad2Deg;
-        wheelRotationOfFV = Quaternion.Euler( 0f, wheelAngleOfFV ,0f); 
+        wheelRotationOfFV = Quaternion.Euler( 0f, 0f, wheelAngleOfFV);
         
         float wheelOmegaOfSV = (secondVehicleSpeed / wheelRadius) * Time.fixedDeltaTime;
         wheelAngleOfSV += -wheelOmegaOfSV * Mathf.Rad2Deg;
-        wheelRotationOfSV = Quaternion.Euler( 0f, wheelAngleOfSV ,0f); //右手から左手に変換
+        wheelRotationOfSV = Quaternion.Euler( 0f, 0f, -wheelAngleOfSV); //右手から左手に変換
     }
 
 
@@ -193,7 +213,7 @@ public class VehicleRobotRenderer : MonoBehaviour
     {
 
         // 第1車両オブジェクトの移動 firstVehicle
-        FirstVehicle.transform.SetPositionAndRotation(firstVehiclePosition, firstVehicleRotation);
+        FirstVehicle.SetPositionAndRotation(firstVehiclePosition, firstVehicleRotation);
 
         // 先頭車両の前輪ステア
         steerFROfFV.localRotation = steerFROfFVLocalRotInitial * steerRotationOfFV;
@@ -202,26 +222,25 @@ public class VehicleRobotRenderer : MonoBehaviour
         wheelFLOfFV.localRotation = wheelFLOfFVLocalRotInitial * wheelRotationOfFV;
         wheelFROfFV.localRotation = wheelFROfFVLocalRotInitial * wheelRotationOfFV;
         // 先頭車両の後輪ホイール
-        wheelRLOfFV.localRotation = wheelRLOfFVLocalRotInitial * wheelRotationOfFV;
-        wheelRROfFV.localRotation = wheelRROfFVLocalRotInitial * wheelRotationOfFV;
+        wheelRearOfFV.localRotation = wheelRearOfFVLocalRotInitial * wheelRotationOfFV;
 
         // 荷台オブジェクトの移動 truckBed
-        TruckBed.transform.SetPositionAndRotation(truckBedPosition, truckBedRotation);
+        TruckBed.SetPositionAndRotation(truckBedPosition, truckBedRotation);
 
         // 第二車両オブジェクトの移動 secondVehicle
-        SecondVehicle.transform.SetPositionAndRotation(secondVehiclePosition, secondVehicleRotation);
+        SecondVehicle.SetPositionAndRotation(secondVehiclePosition, secondVehicleRotation);
         // 後方車両の前輪ステア
         steerRROfSV.localRotation = steerRROfSVLocalRotInitial * steerRotationOfSV;
         steerRLOfSV.localRotation = steerRLOfSVLocalRotInitial * steerRotationOfSV;
         // 後方車両の前輪ホイール
-        wheelFLOfSV.localRotation = wheelFLOfSVLocalRotInitial * wheelRotationOfSV;
-        wheelFROfSV.localRotation = wheelFROfSVLocalRotInitial * wheelRotationOfSV;
+        wheelFrontOfSV.localRotation = wheelFrontOfSVLocalRotInitial * wheelRotationOfSV;
         // 後方車両の後輪ホイール
         wheelRLOfSV.localRotation = wheelRLOfSVLocalRotInitial * wheelRotationOfSV;
         wheelRROfSV.localRotation = wheelRROfSVLocalRotInitial * wheelRotationOfSV;
     }
     // Update is called once per frame
     void LateUpdate() {
+        if (sim == null) return;
         if (sim.isSimulationRunning)
         {
             UpdatePositions();
