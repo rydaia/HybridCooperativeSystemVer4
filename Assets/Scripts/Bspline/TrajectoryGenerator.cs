@@ -83,7 +83,7 @@ public class TrajectoryGenerator
 
         // 刻み幅 0.01[m] = 1[cm]
         Np = Mathf.FloorToInt(smax_past / 0.01f) + 1;
-        Nf = Mathf.FloorToInt(smax_future / 0.01f);
+        Nf = Mathf.FloorToInt(smax_future / 0.1f);
 
         calc.cpQueue.Initialize(dt, calc);
 

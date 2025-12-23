@@ -82,16 +82,16 @@ public class TargetPointCtrl : MonoBehaviour
         inputMode = InputMode.Keyboard;
         // inputMode = InputMode.G923;
 
-        minCruiseSpeed = 1.0f; // 最低巡航速度
+        minCruiseSpeed = 1.3888f; // m/s 5.0 km/h
         brakeDecel = 2.0f;     // ブレーキ減速率
 
-        maxV1 = 3.0f;          // 最大前進スピード m/s
+        maxV1 = 6.0f;          // 最大前進スピード m/s
         minV1 = -3.0f;         // 最大後退スピード
         driveAcceleration = 0.1f;  // 加速・減速量
 
-        maxV2 = 0.12f;          // 最大旋回スピード [rad/s]
-        minV2 = -0.12f;         // 最大旋回スピード [rad/s]
-        steerAcceleration = 0.01f;  // 加速・減速量
+        maxV2 = 1.0f;          // 最大旋回スピード [rad/s]
+        minV2 = -1.0f;         // 最大旋回スピード [rad/s]
+        steerAcceleration = 0.05f;  // 加速・減速量
 
         InputV2Flag = false;
         nextDriveMode = TargetPointMode.Forward;
@@ -101,22 +101,12 @@ public class TargetPointCtrl : MonoBehaviour
     {
         HandleModeChange();
 
-        HandleDriveInput();
-        HandleDriveInput_Pad();
-        HandleSteerInput_Pad();
-        HandleSteerInput();
-
-
-        // if (inputMode == InputMode.G923)
-        // {
-        //     HandleDriveInput_G923();
-        //     HandleSteerInput_G923();
-        // }
-        // else
-        // {
-        //     HandleDriveInput();
-        //     HandleSteerInput();
-        // }
+        // HandleDriveInput();
+        // HandleDriveInput_Pad();
+        // HandleSteerInput_Pad();
+        // HandleSteerInput();
+        HandleDriveInput_G923();
+        HandleSteerInput_G923();
 
         calc.targetPointState.UpdateTargetPoint(_v1);
     }
@@ -177,7 +167,6 @@ public class TargetPointCtrl : MonoBehaviour
         float throttle = Mathf.Clamp01(g923Throttle.action.ReadValue<float>());
         float brake    = Mathf.Clamp01(g923Brake.action.ReadValue<float>());
 
-        Debug.Log($"brake: {brake}, throttle:{throttle}");
 
         // float dt = Time.deltaTime;
         float dt = 0.01f;
@@ -208,7 +197,7 @@ public class TargetPointCtrl : MonoBehaviour
                 _v1 -= brake * brakeDecel * dt;
             }
 
-            // 制約
+            // ブレーキを踏んでなかったら
             if (brake <= 0.01f)
             {
                 // ブレーキを踏んでいない限り 0.1 以下にはならない
@@ -219,6 +208,7 @@ public class TargetPointCtrl : MonoBehaviour
                 // ブレーキ中は 0 までOK
                 _v1 = Mathf.Max(_v1, 0f);
             }
+
         }
         else if(mode == TargetPointMode.Back)
         {
@@ -255,6 +245,9 @@ public class TargetPointCtrl : MonoBehaviour
         }
 
         _v1 = Mathf.Clamp(_v1, 0f, maxV1);
+
+        Debug.Log($"brake: {brake}, throttle:{throttle}, -v1:{_v1}");
+
 
         calc.targetPointState.setV1(_v1);
     }
@@ -310,6 +303,17 @@ public class TargetPointCtrl : MonoBehaviour
 
         _v1 = Mathf.Clamp(_v1, 0f, maxV1);
         calc.targetPointState.setV1(_v1);
+    }
+
+    private void HandleSteerInput_G923()
+    {
+        float steer = g923Steer1.action.ReadValue<float>(); // -1 ～ +1
+
+        _v2 = steer * maxV2 * 1.0f;
+
+        InputV2Flag = Mathf.Abs(steer) > 0.01f;
+
+        calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
     }
 
 
@@ -391,16 +395,7 @@ public class TargetPointCtrl : MonoBehaviour
         calc.targetPointState.setV1(Mathf.Clamp(_v1, minV1, maxV1));
     }
 
-    private void HandleSteerInput_G923()
-    {
-        float steer = g923Steer1.action.ReadValue<float>(); // -1 ～ +1
 
-        _v2 = steer * maxV2;
-
-        InputV2Flag = Mathf.Abs(steer) > 0.01f;
-
-        calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
-    }
 
     private void HandleSteerInput()
     {

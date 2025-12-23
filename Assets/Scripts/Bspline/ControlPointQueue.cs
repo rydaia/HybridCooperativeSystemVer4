@@ -201,7 +201,7 @@ public class ControlPointQueue
             Tp = new float2(Tp.x, Tp.y),
             theta = theta,
             kappa = kappa,
-            d = dt,
+            d = 0.1f,
             output = future
         };
 
