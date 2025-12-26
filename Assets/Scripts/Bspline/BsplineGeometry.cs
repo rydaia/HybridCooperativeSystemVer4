@@ -259,7 +259,7 @@ public class BsplineGeometry
             start         = start
         };
 
-        JobHandle handle = job.Schedule(Ns, 64);
+        JobHandle handle = job.Schedule(Ns, 128);
         handle.Complete();
 
         float2[] result = output.ToArray();
@@ -287,7 +287,7 @@ public class BsplineGeometry
             start         = start
         };
 
-        JobHandle handle = job.Schedule(Ns, 64);
+        JobHandle handle = job.Schedule(Ns, 128);
         handle.Complete();
 
         float2[] result = output.ToArray();

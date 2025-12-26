@@ -151,6 +151,8 @@ public class TrajectoryGenerator
             // 判定条件を満たした時、その時の過去データを制御点データとして更新する
             DetermineUpdateControlePoint();
 
+            SetIsUpdateCPdataFlag(true);
+
             if(GetIsUpdateCPFlag())
             {
                 Debug.Log($"Bスプライン曲線を再生成します.");

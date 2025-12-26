@@ -205,7 +205,7 @@ public class ControlPointQueue
             output = future
         };
 
-        JobHandle handle = job.Schedule(Nf, 64);
+        JobHandle handle = job.Schedule(Nf, 128);
         handle.Complete();
     }
 

@@ -39,7 +39,7 @@ public class ControlPointSmoother
         };
 
         // ここでJobの実行
-        JobHandle handle = job.Schedule(Nsm, 64);
+        JobHandle handle = job.Schedule(Nsm, 128);
         handle.Complete();
 
         return smoothedNative;

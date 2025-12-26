@@ -181,8 +181,15 @@ public class TargetPointCtrl : MonoBehaviour
             // アクセル
             if (throttle > 0.01f)
             {
+                // アクセル量から「目標速度」を決める
+                // float targetSpeed = throttle * maxV1;
+                float targetSpeed = Mathf.Pow(throttle, 1.5f) * maxV1;
+                float accelRate = 5.0f; 
+
                 // アクセル量に応じて加速
-                _v1 += throttle * driveAcceleration * dt;
+                // _v1 += throttle * driveAcceleration * dt;
+                _v1 = Mathf.MoveTowards(_v1, targetSpeed, accelRate * dt);
+
             }
             else
             {
@@ -305,16 +312,52 @@ public class TargetPointCtrl : MonoBehaviour
         calc.targetPointState.setV1(_v1);
     }
 
+    // private void HandleSteerInput_G923()
+    // {
+    //     float steer = g923Steer1.action.ReadValue<float>(); // -1 ～ +1
+
+    //     _v2 = steer * maxV2 * 1.0f;
+
+    //     InputV2Flag = Mathf.Abs(steer) > 0.01f;
+
+    //     calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
+    // }
+
     private void HandleSteerInput_G923()
     {
         float steer = g923Steer1.action.ReadValue<float>(); // -1 ～ +1
 
-        _v2 = steer * maxV2 * 1.0f;
+        float steerAccel = 8.5f;     // ステア応答の速さ
+        float steerReturn = 6.0f;    // 手放した時の戻り
+        float steerDeadZone = 0.00f;
+        float dt = 0.01f;
+        float maxV2 = 1.0f;
 
-        InputV2Flag = Mathf.Abs(steer) > 0.01f;
+        float targetV2 = 0f;
+
+        if (Mathf.Abs(steer) > steerDeadZone)
+        {
+            // ハンドル入力 → 目標ステア角速度
+            targetV2 = steer * maxV2;
+            InputV2Flag = true;
+        }
+        else
+        {
+            // 手放したら自然に戻る
+            targetV2 = 0f;
+            InputV2Flag = false;
+        }
+
+        // 現在の v2 を目標に追従させる
+        _v2 = Mathf.MoveTowards(
+            _v2,
+            targetV2,
+            (InputV2Flag ? steerAccel : steerReturn) * dt
+        );
 
         calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
     }
+
 
 
     // スピードが0の時を停止状態とする.
