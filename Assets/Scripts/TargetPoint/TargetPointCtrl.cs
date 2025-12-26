@@ -87,7 +87,7 @@ public class TargetPointCtrl : MonoBehaviour
 
         maxV1 = 6.0f;          // 最大前進スピード m/s
         minV1 = -3.0f;         // 最大後退スピード
-        driveAcceleration = 0.1f;  // 加速・減速量
+        driveAcceleration = 0.45f;  // 加速・減速量
 
         maxV2 = 1.0f;          // 最大旋回スピード [rad/s]
         minV2 = -1.0f;         // 最大旋回スピード [rad/s]

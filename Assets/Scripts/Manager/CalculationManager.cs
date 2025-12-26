@@ -421,7 +421,7 @@ public class CalculationManager : MonoBehaviour
         cpQueue.Dispose();
         cpResample.Dispose();
         cpSmooth.Dispose();
-        // bsplineGeometry.Dispose();
+        bsplineGeometry.Dispose();
         psFinder.Dispose();
     }
 

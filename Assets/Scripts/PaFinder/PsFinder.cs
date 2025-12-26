@@ -9,6 +9,12 @@ public class PsFinder
 {
     static ProfilerMarker PsFinderMarker = new ProfilerMarker("PsFinder.StepPsFinder()");
 
+    static ProfilerMarker Ps1FinderMarker = new ProfilerMarker("PsFinder.FindPs1PointGlobally_Job()");
+
+    static ProfilerMarker Ps2FinderMarker = new ProfilerMarker("PsFinder.FindPs2PointGlobally_Job()");
+
+    static ProfilerMarker RebuildCacheMarker = new ProfilerMarker("PsFinder.RebuildCache()");
+
     private TrajectoryGenerator trajectoryGenerator;
     private VehicleRobotState vehicleRobotState; 
     private BsplineGeometry bsplineGeometry; 
@@ -87,19 +93,26 @@ public class PsFinder
             prevLocalPs1Index = localU1Index;
             prevLocalPs2Index = localU2Index;
 
-            if(trajectoryGenerator.GetIsUpdateCPFlag())
+
+            using(RebuildCacheMarker.Auto())
             {
-                RebuildCache();
+                if(trajectoryGenerator.GetIsUpdateCPFlag())
+                {
+                    RebuildCache();
+                }
             }
 
-            if (!isInitialSeachedPs1)
+            using(Ps1FinderMarker.Auto())
             {
-                localU1Index = FindPs1PointGlobally_Job();
-            }
-            else
-            {
-                // localU1Index = FindPs1PointLocally_Job(100);
-                localU1Index = FindPs1PointGlobally_Job();
+                if (!isInitialSeachedPs1)
+                {
+                    localU1Index = FindPs1PointGlobally_Job();
+                }
+                else
+                {
+                    // localU1Index = FindPs1PointLocally_Job(100);
+                    localU1Index = FindPs1PointGlobally_Job();
+                }
             }
 
 
@@ -129,15 +142,19 @@ public class PsFinder
             bsplineGeometry.SetRx1(bsplineGeometry.frontPoints[localU1Index].x);
             bsplineGeometry.SetRy1(bsplineGeometry.frontPoints[localU1Index].y);
 
-            // Ps2
-            if (!isInitialSeachedPs2)
+
+            using(Ps2FinderMarker.Auto())
             {
-                localU2Index = FindPs2PointGlobally_Job();
-            }
-            else
-            {
-                localU2Index = FindPs2PointGlobally_Job();
-                // localU2Index = FindPs2PointLocally_Job(200);
+                // Ps2
+                if (!isInitialSeachedPs2)
+                {
+                    localU2Index = FindPs2PointGlobally_Job();
+                }
+                else
+                {
+                    localU2Index = FindPs2PointGlobally_Job();
+                    // localU2Index = FindPs2PointLocally_Job(200);
+                }
             }
 
             if (localU2Index >= Ns)
@@ -213,9 +230,14 @@ public class PsFinder
 
         if (N <= 1) return 0;
 
-        // Debug.Log($"R[0].x, R[0].y:{R[0].x}, {R[0].y}");
-        // Debug.Log($"dR[0].x, dR[0].y:{dR[0].x}, {dR[0].y}");
-        // Debug.Log($"dR[1].x, dR[1].y:{dR[1].x}, {dR[1].y}");
+        // Debug.Log($"R[0].x, R[0].y:{frontBspline[0].x}, {frontBspline[0].y}");
+        // Debug.Log($"R[1].x, R[1].y:{frontBspline[1].x}, {frontBspline[1].y}");
+        // Debug.Log($"R[2].x, R[2].y:{frontBspline[2].x}, {frontBspline[2].y}");
+
+        // Debug.Log($"dR[0].x, dR[0].y:{dFrontBspline[0].x}, {dFrontBspline[0].y}");
+        // Debug.Log($"dR[1].x, dR[1].y:{dFrontBspline[1].x}, {dFrontBspline[1].y}");
+        // Debug.Log($"dR[2].x, dR[2].y:{dFrontBspline[2].x}, {dFrontBspline[2].y}");
+
         // Debug.Log($"vehicleRobotState.GetX1(), vehicleRobotState.GetY1():{vehicleRobotState.GetX1()}, {vehicleRobotState.GetY1()}");
 
         // ここでIJobParallelForの呼び出し 各ループを並列に処理する
@@ -245,7 +267,8 @@ public class PsFinder
         for (int i = 0; i < Ns; i++)
         {
             // Debug.Log($"i:{i}, scoreArray[i]:{scoreArray[i]}");
-            // Debug.Log($"i:{i}, R[i].x, R[i].y:{R[i].x}, {R[i].y}");
+            // Debug.Log($"best:{best}, bestIdx:{bestIdx}");
+            // Debug.Log($"i:{i}, R[i].x, R[i].y:{frontBspline[i].x}, {frontBspline[i].y}");
 
 
             float s = scoreArray[i];

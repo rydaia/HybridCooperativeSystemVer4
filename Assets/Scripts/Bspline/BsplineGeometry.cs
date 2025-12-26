@@ -14,14 +14,15 @@ public class BsplineGeometry
     static ProfilerMarker bsplineGeometryMarker =
         new ProfilerMarker("BsplineGeometry.CalculationBsplineGeometry()");
     static ProfilerMarker GeneratePointsMarker = new ProfilerMarker("BSplineCurve.generatePoints");
-    static ProfilerMarker DerivativePointsMarker = new ProfilerMarker("BSplineCurve.DerivativeAllPoints()");
-
+    static ProfilerMarker CopyMarker = new ProfilerMarker("BSplineCurve.Copy");
+    static ProfilerMarker EvaluateDerivativesAtU2Marker = new ProfilerMarker("BsplineGeometry.EvaluateDerivativesAtU2()");
+    static ProfilerMarker EvaluateDerivativesAtU1Marker = new ProfilerMarker("BsplineGeometry.EvaluateDerivativesAtU1()");
 
     private PsFinder psFinder;
     public TrajectoryGenerator trajectoryGenerator;
 
     //　制御点データ
-    float2[] controlPoints;
+    NativeArray<float2> controlPointsNative;
     // ノットベクトル
     float[] knots;
 
@@ -61,6 +62,10 @@ public class BsplineGeometry
     private float d4Rx2du24, d4Ry2du24;
 
     private float[,] Nmat, dbMat1, dbMat2, dbMat3, dbMat4;
+
+    NativeArray<float>  NmatNative;
+    NativeArray<float>  dbMat1Native, dbMat2Native, dbMat3Native, dbMat4Native;
+
     private int frontStart, frontEnd;
     private int rearStart, rearEnd;
 
@@ -74,16 +79,15 @@ public class BsplineGeometry
         this.trajectoryGenerator = trajectoryGenerator;
         this.psFinder = finder;
 
-
-
-
         // controlPoints = new NativeArray<float2>(trajectoryGenerator.GetNctrl(), Allocator.Persistent);
         Nctrl = trajectoryGenerator.GetNctrl();
-        controlPoints = new float2[Nctrl];
+        // controlPoints = new float2[Nctrl];
+
+        controlPointsNative = new NativeArray<float2>(Nctrl, Allocator.Persistent);
 
         k = trajectoryGenerator.GetK() + 1;
         p = k - 1;               
-        n = trajectoryGenerator.GetNctrl() - 1;      // ← 1201
+        n = trajectoryGenerator.GetNctrl() - 1;
         m = n + k + 1; // 1001
 
         N = trajectoryGenerator.GetN(); // 20,000
@@ -111,7 +115,7 @@ public class BsplineGeometry
             t_sampling[i] = math.lerp(t_ver[0], t_ver[^1], (float)i / (N - 1));
 
         // Bスプライン基底関数行列の算出
-        // Ns x n行列
+        // N x n行列
         Debug.Log("CalculateBsplineBasisMatrix(k, t_sampling, knots) Start");
         Nmat = CalculateBsplineBasisMatrix(k, t_sampling, knots);
 
@@ -131,6 +135,28 @@ public class BsplineGeometry
         order = 4;
         dbMat4 = CalculateBsplineBasisDerivativeMatrix(k, knots, t_sampling, order);
 
+
+        NmatNative = new NativeArray<float>(N * Nctrl, Allocator.Persistent);
+        dbMat1Native = new NativeArray<float>(N * Nctrl, Allocator.Persistent);
+        dbMat2Native = new NativeArray<float>(N * Nctrl, Allocator.Persistent);
+        dbMat3Native = new NativeArray<float>(N * Nctrl, Allocator.Persistent);
+        dbMat4Native = new NativeArray<float>(N * Nctrl, Allocator.Persistent);
+
+        // Debug.Log($"N:{N}, n:{n}, N * Nctrl:{N * Nctrl}");
+
+
+        for (int j = 0; j < N; j++)
+        {
+            for (int i = 0; i < Nctrl; i++)
+            {
+                NmatNative [j * Nctrl + i] = Nmat[j, i];
+                dbMat1Native[j * Nctrl + i] = dbMat1[j, i];
+                dbMat2Native[j * Nctrl + i] = dbMat2[j, i];
+                dbMat3Native[j * Nctrl + i] = dbMat3[j, i];
+                dbMat4Native[j * Nctrl + i] = dbMat4[j, i];
+            }
+        }
+        
         frontPoints = new float2[Ns];
         rearPoints = new float2[Ns];
 
@@ -158,10 +184,12 @@ public class BsplineGeometry
         // Debug.Log("EvaluateBspline(Nmat, controlPoints) Start");
         // input が制御点なら、まず controlPoints に反映
         if (input.Length != Nctrl) Debug.LogError($"input.Length={input.Length} Nctrl={Nctrl}");
-        Array.Copy(input, controlPoints, Nctrl);
+        // Array.Copy(input, controlPoints, Nctrl);
 
-        frontPoints = EvaluateBspline(Nmat, frontStart, frontEnd);
-        rearPoints = EvaluateBspline(Nmat, rearStart, rearEnd);
+        controlPointsNative.CopyFrom(input);
+
+        frontPoints = EvaluateBspline(NmatNative, frontStart, frontEnd);
+        rearPoints = EvaluateBspline(NmatNative, rearStart, rearEnd);
 
         return;
     }
@@ -171,8 +199,8 @@ public class BsplineGeometry
     {
 
         // Debug.Log("DerivativeBspline(dbMat1, controlPoints) 1階微分 Start");
-        frontDerivative1 = DerivativeBspline(dbMat1, frontStart, frontEnd);
-        rearDerivative1 = DerivativeBspline(dbMat1, rearStart, rearEnd);
+        frontDerivative1 = DerivativeBspline(dbMat1Native, frontStart, frontEnd);
+        rearDerivative1 = DerivativeBspline(dbMat1Native, rearStart, rearEnd);
 
         return;
     }
@@ -188,11 +216,17 @@ public class BsplineGeometry
             int u1Index = psFinder.GetU1Index();
             int u2Index = psFinder.GetU2Index();
 
+            using (EvaluateDerivativesAtU1Marker.Auto())
+            {
+                // R(u)の各u微分を計算
+                EvaluateDerivativesAtU1(u1Index);
+            }
 
-
-            // R(u)の各u微分を計算
-            EvaluateDerivativesAtU1(u1Index);
-            EvaluateDerivativesAtU2(u2Index);
+            using (EvaluateDerivativesAtU2Marker.Auto())
+            {
+                // R(u)の各u微分を計算
+                EvaluateDerivativesAtU2(u2Index);
+            }
         }
     }
 
@@ -209,56 +243,59 @@ public class BsplineGeometry
 
 
     private float2[] EvaluateBspline(
-        float[,] Nmat,
+        NativeArray<float> NmatNative,
         int start,
         int end
     )
     {
-        int n  = Nmat.GetLength(1);
+        var output     = new NativeArray<float2>(Ns, Allocator.TempJob);
 
-        float2[] C = new float2[Ns];
-
-        int Nt = Nmat.GetLength(0);
-        int idx = 0; // ← C用のインデックス
-
-        for (int j = start; j < end; j++)
+        var job = new BsplineEvaluateJob
         {
-            float2 sum = float2.zero;
-            for (int i = 0; i < n; i++)
-            {
-                sum += Nmat[j, i] * controlPoints[i];
-            }
-            C[idx] = sum;
-            idx++;
-        }
+            Nmat          = NmatNative,
+            controlPoints = controlPointsNative,
+            C             = output,
+            n             = Nctrl,
+            start         = start
+        };
 
-        return C;
+        JobHandle handle = job.Schedule(Ns, 64);
+        handle.Complete();
+
+        float2[] result = output.ToArray();
+
+        // Dispose
+        output.Dispose();
+
+        return result;
     }
 
     private float2[] DerivativeBspline(
-        float[,] Nmat,
+        NativeArray<float> dbMat1Native,
         int start,
         int end
     )
     {
-        int n  = Nmat.GetLength(1);
+        var output     = new NativeArray<float2>(Ns, Allocator.TempJob);
 
-        float2[] C = new float2[Ns];
-
-        int idx = 0; // ← C用のインデックス
-
-        for (int j = start; j < end; j++)
+        var job = new BsplineEvaluateJob
         {
-            float2 sum = float2.zero;
-            for (int i = 0; i < n; i++)
-            {
-                sum += Nmat[j, i] * controlPoints[i];
-            }
-            C[idx] = sum;
-            idx++;
-        }
+            Nmat          = dbMat1Native,
+            controlPoints = controlPointsNative,
+            C             = output,
+            n             = Nctrl,
+            start         = start
+        };
 
-        return C;
+        JobHandle handle = job.Schedule(Ns, 64);
+        handle.Complete();
+
+        float2[] result = output.ToArray();
+
+        // Dispose
+        output.Dispose();
+
+        return result;
     }
 
     private float[] GenerateKnots(
@@ -514,8 +551,17 @@ public class BsplineGeometry
 
         // Debug.Log($"global u1 idx:{idx1}");
 
+        if (idx1 >= N)
+        {
+            Debug.LogError($"idx1 out of range: {idx1}");
+            return;
+        }
+
+
         float u1 = CalculateU(idx1);
-        int n  = Nmat.GetLength(1);
+        // int n  = controlPointsNative.Length;
+        int n = Nctrl; // ← BsplineGeometry のフィールド
+
 
         // Debug.Log($"n:{n}");
 
@@ -524,10 +570,15 @@ public class BsplineGeometry
         float2 d3R1du13 = float2.zero; 
         float2 d4R1du14 = float2.zero;
 
+        int baseIdx = idx1 * n;
+
+        // sum += Nmat[j, i] * controlPoints[i];
+
+
         // 1階微分
         for (int i = 0; i < n; i++)
         {
-            d1R1du11 += dbMat1[idx1, i] * controlPoints[i];
+            d1R1du11 += dbMat1Native[baseIdx + i] * controlPointsNative[i];
         }
         SetD1Rx1du11(d1R1du11.x);
         SetD1Ry1du11(d1R1du11.y);
@@ -535,7 +586,7 @@ public class BsplineGeometry
         // 2階微分
         for (int i = 0; i < n; i++)
         {
-            d2R1du12 += dbMat2[idx1, i] * controlPoints[i];
+            d2R1du12 += dbMat2Native[baseIdx + i] * controlPointsNative[i];
         }
         SetD2Rx1du12(d2R1du12.x);
         SetD2Ry1du12(d2R1du12.y);
@@ -543,7 +594,7 @@ public class BsplineGeometry
         // 3階微分
         for (int i = 0; i < n; i++)
         {
-            d3R1du13 += dbMat3[idx1, i] * controlPoints[i];
+            d3R1du13 += dbMat3Native[baseIdx + i] * controlPointsNative[i];
         }
         SetD3Rx1du13(d3R1du13.x);
         SetD3Ry1du13(d3R1du13.y);
@@ -551,7 +602,7 @@ public class BsplineGeometry
         // 4階微分
         for (int i = 0; i < n; i++)
         {
-            d4R1du14 += dbMat4[idx1, i] * controlPoints[i];
+            d4R1du14 += dbMat4Native[baseIdx + i] * controlPointsNative[i];
         }
         SetD4Rx1du14(d4R1du14.x);
         SetD4Ry1du14(d4R1du14.y);
@@ -562,17 +613,20 @@ public class BsplineGeometry
     public void EvaluateDerivativesAtU2(int idx2)
     {
         float u2 = CalculateU(idx2);
-        int n  = Nmat.GetLength(1);
+        // int n  = controlPointsNative.Length;
+        int n = Nctrl; // ← BsplineGeometry のフィールド
 
         float2 d1R2du21 = float2.zero; 
         float2 d2R2du22 = float2.zero; 
         float2 d3R2du23 = float2.zero; 
         float2 d4R2du24 = float2.zero;
 
+        int baseIdx = idx2 * n;
+
         // 1階微分
         for (int i = 0; i < n; i++)
         {
-            d1R2du21 += dbMat1[idx2, i] * controlPoints[i];
+            d1R2du21 += dbMat1Native[baseIdx + i] * controlPointsNative[i];
         }
         SetD1Rx2du21(d1R2du21.x);
         SetD1Ry2du21(d1R2du21.y);
@@ -580,7 +634,7 @@ public class BsplineGeometry
         // 2階微分
         for (int i = 0; i < n; i++)
         {
-            d2R2du22 += dbMat2[idx2, i] * controlPoints[i];
+            d2R2du22 += dbMat2Native[baseIdx + i] * controlPointsNative[i];
         }
         SetD2Rx2du22(d2R2du22.x);
         SetD2Ry2du22(d2R2du22.y);
@@ -588,7 +642,7 @@ public class BsplineGeometry
         // 3階微分
         for (int i = 0; i < n; i++)
         {
-            d3R2du23 += dbMat3[idx2, i] * controlPoints[i];
+            d3R2du23 += dbMat3Native[baseIdx + i] * controlPointsNative[i];
         }
         SetD3Rx2du23(d3R2du23.x);
         SetD3Ry2du23(d3R2du23.y);
@@ -596,10 +650,21 @@ public class BsplineGeometry
         // 4階微分
         for (int i = 0; i < n; i++)
         {
-            d4R2du24 += dbMat4[idx2, i] * controlPoints[i];
+            d4R2du24 += dbMat4Native[baseIdx + i] * controlPointsNative[i];
         }
         SetD4Rx2du24(d4R2du24.x);
         SetD4Ry2du24(d4R2du24.y);
+    }
+
+    public void Dispose()
+    {
+        if (NmatNative.IsCreated) NmatNative.Dispose();
+        if (dbMat1Native.IsCreated) dbMat1Native.Dispose();
+        if (dbMat2Native.IsCreated) dbMat2Native.Dispose();
+        if (dbMat3Native.IsCreated) dbMat3Native.Dispose();
+        if (dbMat4Native.IsCreated) dbMat4Native.Dispose();
+
+        if (controlPointsNative.IsCreated) controlPointsNative.Dispose();
     }
 
     public void CopyFrontBspline(NativeArray<float2> dst)
