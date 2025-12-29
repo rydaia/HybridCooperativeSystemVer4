@@ -155,7 +155,7 @@ public class TrajectoryGenerator
 
             if(GetIsUpdateCPFlag())
             {
-                Debug.Log($"Bスプライン曲線を再生成します.");
+                // Debug.Log($"Bスプライン曲線を再生成します.");
                 UpdateControlPoints();  
 
                 using (smoothControlPointsMarker.Auto())

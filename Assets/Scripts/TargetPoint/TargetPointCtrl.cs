@@ -76,6 +76,11 @@ public class TargetPointCtrl : MonoBehaviour
         }
     }
 
+    // void FixedUpdate()
+    // {
+    //     ReadInput();
+    // }
+
     public void Initialize()
     {
 
@@ -97,7 +102,7 @@ public class TargetPointCtrl : MonoBehaviour
         nextDriveMode = TargetPointMode.Forward;
     }
 
-    public void ReadInput(int i)
+    public void ReadInput()
     {
         HandleModeChange();
 
@@ -164,12 +169,11 @@ public class TargetPointCtrl : MonoBehaviour
 
     private void HandleDriveInput_G923()
     {
-        float throttle = Mathf.Clamp01(g923Throttle.action.ReadValue<float>());
-        float brake    = Mathf.Clamp01(g923Brake.action.ReadValue<float>());
+        float throttle = Mathf.Abs(g923Throttle.action.ReadValue<float>() - 1.0f);
+        float brake    = Mathf.Abs(g923Brake.action.ReadValue<float>() - 1.0f);
 
-
-        // float dt = Time.deltaTime;
-        float dt = 0.01f;
+        float dt = Time.deltaTime;
+        // float dt = 0.01f;
 
         // 現在速度を取得
         _v1 = calc.targetPointState.getV1();
@@ -253,7 +257,7 @@ public class TargetPointCtrl : MonoBehaviour
 
         _v1 = Mathf.Clamp(_v1, 0f, maxV1);
 
-        Debug.Log($"brake: {brake}, throttle:{throttle}, -v1:{_v1}");
+        // Debug.Log($"brake: {brake}, throttle:{throttle}, -v1:{_v1}");
 
 
         calc.targetPointState.setV1(_v1);
@@ -331,7 +335,7 @@ public class TargetPointCtrl : MonoBehaviour
         float steerReturn = 6.0f;    // 手放した時の戻り
         float steerDeadZone = 0.00f;
         float dt = 0.01f;
-        float maxV2 = 1.0f;
+        float maxV2 = 0.85f;
 
         float targetV2 = 0f;
 
