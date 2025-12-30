@@ -160,7 +160,8 @@ public class CalculationManager : MonoBehaviour
         psFinder.Initialize(bsplineGeometry);
 
         pathKinematics.Initialize(trajectoryGenerator, bsplineGeometry);
-        vehicleKinematics.Initialize(            
+        vehicleKinematics.Initialize(    
+            sim,        
             targetPointState, 
             vehicleRobotState, 
             vehicleRobotParms, 

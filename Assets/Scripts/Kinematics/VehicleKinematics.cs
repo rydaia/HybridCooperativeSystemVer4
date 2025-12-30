@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Profiling;
+using Unity.Mathematics;
 
 
 public class VehicleKinematics : MonoBehaviour
@@ -16,6 +17,9 @@ public class VehicleKinematics : MonoBehaviour
     private VehicleParameters vehicleRobotParms;
     private BsplineGeometry bsplineGeometry;
     private PathKinematics pathKinematics;    
+
+    private SimulationManager sim;    
+
 
 
     [Header("フィードバック制御ゲイン")]
@@ -66,6 +70,9 @@ public class VehicleKinematics : MonoBehaviour
     public float _squaredD1c1ds11;
 
     public float _d1;
+
+    public float dMax;
+
     public float _squaredD1;
 
     public float _phi1;
@@ -160,6 +167,7 @@ public class VehicleKinematics : MonoBehaviour
     // }
 
     public void Initialize(
+        SimulationManager sim,
         TargetPointState TPstate,
         VehicleRobotState robot, 
         VehicleParameters vehicleParams, 
@@ -180,12 +188,14 @@ public class VehicleKinematics : MonoBehaviour
         k2 = 6.0f;
         k3 = 6.0f;
 
-
+        this.sim = sim;
         this.targetPointState = TPstate;
         this.vehicleRobotState = robot;
         this.vehicleRobotParms = vehicleParams;
         this.bsplineGeometry = geo;
         this.pathKinematics = path;    
+
+        dMax = 1.0f;
 
         L1 = vehicleRobotParms.GetL1();
         L2 = vehicleRobotParms.GetL2();
@@ -239,6 +249,8 @@ public class VehicleKinematics : MonoBehaviour
         _thetaP2d = pathKinematics.GetThetaP2d();
 
         CalculateD1();// 先頭車両追従に関与
+        CalculateD2();// 先頭車両追従に関与
+
 
         // Debug.Log($"_phi1:{_phi1}, _phi2:{_phi2}, thetaP1:{thetaP1}, thetaP2:{thetaP2}, thetaP3:{thetaP3}, _d1:{_d1}");
 
@@ -349,24 +361,64 @@ public class VehicleKinematics : MonoBehaviour
 
         _d1 = _dx*_n.x + _dy*_n.y;
 
-
-
-
-        // ここから制御
-        float d0 = 0.005f;
-
-        if(_d1 > d0)
+        if(_d1 < dMax)
         {
-
-            float dr = _d1;
-            SetD1(dr);
+            SetD1(_d1);
         }
         else
         {
-            float dr = 0.0f;
-            SetD1(dr);
+            Debug.LogError($"誤差d1が{dMax}を超えました. :{_d1}");
+            sim.StopSimulation();
         }
+
+
+        // ここから制御
+        // float d0 = 0.005f;
+
+        // if(_d1 > d0)
+        // {
+
+        //     float dr = _d1;
+        //     SetD1(dr);
+        // }
+        // else
+        // {
+        //     float dr = 0.0f;
+        //     SetD1(dr);
+        // }
         // 第一操作点からベジェ曲線へ下ろした時に垂直となる接戦の角度
+    }
+
+    public void CalculateD2()
+    {
+        float _d2;
+
+        float _x2_curr = vehicleRobotState.GetX2();
+        float _y2_curr = vehicleRobotState.GetY2();
+        float _rx2 = bsplineGeometry.GetRx2();
+        float _ry2 = bsplineGeometry.GetRy2();
+
+        float _d1rx2du21 = bsplineGeometry.GetD1Rx2du21();
+        float _d1ry2du21 = bsplineGeometry.GetD1Ry2du21();
+
+        float _norm2 = Mathf.Sqrt(_d1rx2du21*_d1rx2du21 + _d1ry2du21*_d1ry2du21);
+
+        Vector2 _e;
+        _e.x = _d1rx2du21 / _norm2;
+        _e.y = _d1ry2du21 / _norm2;
+
+        Vector2 _n = new Vector2(-_e.y, _e.x); // 法線ベクトル
+        
+        float _dx = _x2_curr - _rx2;
+        float _dy = _y2_curr - _ry2;
+
+        _d2 = _dx*_n.x + _dy*_n.y;
+
+        if(_d2 > dMax)
+        {
+            Debug.LogError($"誤差d2が{dMax}を超えました. :{_d2}");
+            sim.StopSimulation();
+        }
     }
 
     // 先頭車両追従に関与
@@ -810,15 +862,60 @@ public class VehicleKinematics : MonoBehaviour
         Lf3L2f1h3 = (_squaredFormulaOf1MinusCs1MulD1*_squaredSecPhi1*_cubedSecThetaP1)/L1;
     }
 
-        //可変速
+    float CalculateW1()
+    {
+
+        float ret;
+        // 後輪間中点(X1,Y1)が追従元の経路に対し徐々に追いつけなくなってしまう問題の解消
+        // w1 → tildaU1 → u1の変換で
+        // cos(thetaP1)を割っているので車体が傾くと目標点の速度v1と車体の速度u1に
+        // 誤差が生まれる
+        // float tildaU1 = w1;
+        // u1 = (_formulaOf1MinusCs1MulD1)/_cosThetaP1*tildaU1;
+        // そのため、後輪間中点が正しい場所から離れるとその誤差を埋めようとするフィードバックをかけたい
+        // 正しい場所とは現在の目標点から0.5[m]離れた経路上の点である　frontPoints[?]
+        // frontPointsの戦闘は現在の目標点が入っている frontPoints[Ns]
+        // つまり、現在の後輪間中点の座標と正しい場所との誤差errorを計算する
+        // 遅れているのかすすんでいるのかも計算
+        float targetSpeed = targetPointState.GetV1();
+        float Gain = 5.0f;
+
+        // 後輪間中点
+        float2 pos = (float2)vehicleRobotState.GetMidpointBetweenRearWheelsOfFV();
+
+        // 端から経路に沿って一定距離離れた点
+        // 正しい場所
+        float2 refPos = bsplineGeometry.GetTargetOfFrontPoints();
+
+        // 前後の誤差
+        float2 e = pos - refPos;
+
+        // 微分
+        float2 dr = bsplineGeometry.GetDerivativeTargetOfFrontPoints();
+
+        float norm = Mathf.Sqrt(dr.x*dr.x + dr.y*dr.y);
+
+        float2 t = dr / norm;
+
+        float es = e.x * t.x + e.y * t.y;
+
+        ret = targetSpeed - Gain * es;
+
+        if (norm <= 1e-8f)
+        {
+            w1 = targetSpeed;
+        }
+
+        return ret;
+    }
+
+    //可変速
     public void ComputeControlInputsWForVariable()
     {
         //　制御入力　w１
-        // ok
         // Debug.Log($"_d1thetaP2dds11:{_d1thetaP2dds11}, _d2thetaP2dds12:{_d2thetaP2dds12}, _d3thetaP2dds13:{_d3thetaP2dds13}");
 
-        // 車両の制御入力w1, w3を目標点のv1, v2に対応
-        w1 = targetPointState.GetV1();
+        w1 = CalculateW1();
 
         z33 = _d1;
         z32 = L1f1h3;
@@ -826,7 +923,6 @@ public class VehicleKinematics : MonoBehaviour
 
         w3 = p31*Mathf.Abs(w1)*z31 + p32*w1*z32 + p33*Mathf.Abs(w1)*z33;
         // w3 = targetPointState.getV2();
-
 
         // float maxW3 = 1.0f;
         // float minW3 = -1.0f;

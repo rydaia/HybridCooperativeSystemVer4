@@ -36,6 +36,9 @@ public class BsplineGeometry
     public float2[] frontDerivative1;
     public float2[] rearDerivative1;
 
+    // 経路の端から一定距離離れた点のインデックス
+    int bestIndex;
+
 
     private int Nctrl; // 制御点の総数　1202
     private int N;// 120100
@@ -162,6 +165,8 @@ public class BsplineGeometry
 
         frontDerivative1 = new float2[Ns];
         rearDerivative1 = new float2[Ns];
+
+        bestIndex = 0;
 
         ds = trajectoryGenerator.GetDs();
 
@@ -753,6 +758,41 @@ public class BsplineGeometry
 
 
     public float2[] GetFrontPoints() => frontPoints;
+
+    // frontPoints 上の端点から経路に沿って 0.5m 戻った点を返す
+    public float2 GetTargetOfFrontPoints()
+    {
+        float targetDistance = 0.45f;
+
+        float accumulated = 0f;
+
+        // 末尾（現在の目標点）から後ろへ探索
+        for (int i = Ns-1; i > 0; i--)
+        {
+
+            // Debug.Log($"i:{i}");
+            float2 p0 = frontPoints[i];
+            float2 p1 = frontPoints[i - 1];
+
+            float segmentLength = math.distance(p0, p1);
+            accumulated += segmentLength;
+
+            if (accumulated >= targetDistance)
+            {
+                bestIndex = i - 1;
+                return p1;
+            }
+        }
+
+        // 万一 0.5m 取れなかった場合は先頭を返す
+        return frontPoints[0];
+    }
+
+    public float2 GetDerivativeTargetOfFrontPoints()
+    {
+        return frontDerivative1[bestIndex];
+    }
+
     public float2[] GetRearPoints() => rearPoints;
 
     public float2[] GetFrontDerivative1() => frontDerivative1;

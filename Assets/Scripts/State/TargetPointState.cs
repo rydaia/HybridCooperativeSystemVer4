@@ -100,7 +100,7 @@ public class TargetPointState
             // SetX(x);
             // SetY(y);
 
-            SetX(0.0f);
+            SetX(-3.0f);
             SetY(0.0f);
         }
         else
