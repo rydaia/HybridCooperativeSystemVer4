@@ -102,6 +102,15 @@ public class TargetPointCtrl : MonoBehaviour
         nextDriveMode = TargetPointMode.Forward;
     }
 
+    public void Reset()
+    {
+        inputMode = InputMode.Keyboard;
+        // inputMode = InputMode.G923;
+
+        InputV2Flag = false;
+        nextDriveMode = TargetPointMode.Forward;
+    }
+
     public void ReadInput()
     {
         HandleModeChange();
@@ -176,7 +185,7 @@ public class TargetPointCtrl : MonoBehaviour
         // float dt = 0.01f;
 
         // 現在速度を取得
-        _v1 = calc.targetPointState.getV1();
+        _v1 = calc.targetPointState.GetV1();
 
         var mode = calc.targetPointState.GetMode();
         // 前進モードはスピードが0の時も存在する.
@@ -260,7 +269,7 @@ public class TargetPointCtrl : MonoBehaviour
         // Debug.Log($"brake: {brake}, throttle:{throttle}, -v1:{_v1}");
 
 
-        calc.targetPointState.setV1(_v1);
+        calc.targetPointState.SetV1(_v1);
     }
 
     private void HandleDriveInput_Pad()
@@ -276,7 +285,7 @@ public class TargetPointCtrl : MonoBehaviour
         float brake    = Mathf.Max(-ry, 0f);
 
         // 現在速度
-        _v1 = calc.targetPointState.getV1();
+        _v1 = calc.targetPointState.GetV1();
 
         var mode = calc.targetPointState.GetMode();
 
@@ -313,7 +322,7 @@ public class TargetPointCtrl : MonoBehaviour
         }
 
         _v1 = Mathf.Clamp(_v1, 0f, maxV1);
-        calc.targetPointState.setV1(_v1);
+        calc.targetPointState.SetV1(_v1);
     }
 
     // private void HandleSteerInput_G923()
@@ -324,7 +333,7 @@ public class TargetPointCtrl : MonoBehaviour
 
     //     InputV2Flag = Mathf.Abs(steer) > 0.01f;
 
-    //     calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
+    //     calc.targetPointState.SetV2(Mathf.Clamp(_v2, minV2, maxV2));
     // }
 
     private void HandleSteerInput_G923()
@@ -359,7 +368,7 @@ public class TargetPointCtrl : MonoBehaviour
             (InputV2Flag ? steerAccel : steerReturn) * dt
         );
 
-        calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
+        calc.targetPointState.SetV2(Mathf.Clamp(_v2, minV2, maxV2));
     }
 
 
@@ -368,7 +377,7 @@ public class TargetPointCtrl : MonoBehaviour
     private void HandleDriveInput()
     {
 
-        _v1 = calc.targetPointState.getV1();
+        _v1 = calc.targetPointState.GetV1();
 
         var mode = calc.targetPointState.GetMode();
         // 前進モードはスピードが0の時も存在する.
@@ -439,7 +448,7 @@ public class TargetPointCtrl : MonoBehaviour
             }
         }
 
-        calc.targetPointState.setV1(Mathf.Clamp(_v1, minV1, maxV1));
+        calc.targetPointState.SetV1(Mathf.Clamp(_v1, minV1, maxV1));
     }
 
 
@@ -456,54 +465,14 @@ public class TargetPointCtrl : MonoBehaviour
 
         // なめらかに追従させる（超重要）
         _v2 = Mathf.Lerp(
-            calc.targetPointState.getV2(),
+            calc.targetPointState.GetV2(),
             targetV2,
             steerResponse * 0.01f
         );
 
-        calc.targetPointState.setV2(_v2);
+        calc.targetPointState.SetV2(_v2);
     }
 
-
-
-    // private void HandleSteerInput()
-    // {
-    //     _v2 = calc.targetPointState.getV2();
-
-    //     if (Input.GetKey(KeyCode.LeftArrow))
-    //     {
-    //         // _v2 += steerAcceleration * Time.deltaTime;
-    //         InputV2Flag = true;
-    //         _v2 += steerAcceleration * 0.01f;
-    //     }
-    //     else if (Input.GetKey(KeyCode.RightArrow))
-    //     {
-    //         // _v2 -= steerAcceleration * Time.deltaTime;
-    //         InputV2Flag = true;
-    //         _v2 -= steerAcceleration * 0.01f;
-    //     }
-    //     else
-    //     {
-    //         InputV2Flag = false;
-
-    //         if (_v2 > 0)
-    //         {
-    //             // _v2 -= steerAcceleration * Time.deltaTime;
-    //             _v2 -= steerAcceleration * 0.01f;
-
-    //             if (_v2 < 0) _v2 = 0;
-    //         }
-    //         else if (_v2 < 0)
-    //         {
-    //             _v2 += steerAcceleration * 0.01f;
-    //             // _v2 += steerAcceleration * Time.deltaTime;
-
-    //             if (_v2 > 0) _v2 = 0;
-    //         }
-    //     }
-
-    //     calc.targetPointState.setV2(Mathf.Clamp(_v2, minV2, maxV2));
-    // }
 
     private void HandleSteerInput_Pad()
     {
@@ -513,7 +482,7 @@ public class TargetPointCtrl : MonoBehaviour
         float lx = pad.leftStick.ReadValue().x; // 左:-1 / 右:+1
         float dt = 0.01f; // 今までと合わせるなら固定でOK
 
-        _v2 = calc.targetPointState.getV2();
+        _v2 = calc.targetPointState.GetV2();
 
         // デッドゾーン
         if (Mathf.Abs(lx) < 0.1f)
@@ -549,58 +518,9 @@ public class TargetPointCtrl : MonoBehaviour
         }
 
         _v2 = Mathf.Clamp(_v2, minV2, maxV2);
-        calc.targetPointState.setV2(_v2);
+        calc.targetPointState.SetV2(_v2);
     }
 
-
-
-    // private void HandleSteerInput_Pad()
-    // {
-    //     var pad = Gamepad.current;
-    //     if (pad == null) return;
-
-    //     float lx = pad.leftStick.ReadValue().x; // 左:+1 / 右:-1
-    //     float dt = 0.01f;
-
-
-    //     _v2 = calc.targetPointState.getV2();
-
-    //     if (Input.GetKey(KeyCode.LeftArrow))
-    //     {
-    //         // _v2 += steerAcceleration * Time.deltaTime;
-    //         InputV2Flag = true;
-    //         _v2 += steerAcceleration * 0.01f;
-    //     }
-    //     else if (Input.GetKey(KeyCode.RightArrow))
-    //     {
-    //         // _v2 -= steerAcceleration * Time.deltaTime;
-    //         InputV2Flag = true;
-    //         _v2 -= steerAcceleration * 0.01f;
-    //     }
-    //     else
-    //     {
-    //         InputV2Flag = false;
-
-    //         if (_v2 > 0)
-    //         {
-    //             // _v2 -= steerAcceleration * Time.deltaTime;
-    //             _v2 -= steerAcceleration * 0.01f;
-
-    //             if (_v2 < 0) _v2 = 0;
-    //         }
-    //         else if (_v2 < 0)
-    //         {
-    //             _v2 += steerAcceleration * 0.01f;
-    //             // _v2 += steerAcceleration * Time.deltaTime;
-
-    //             if (_v2 > 0) _v2 = 0;
-    //         }
-    //     }
-
-    //     _v2 = Mathf.Clamp(_v2, minV2, maxV2);
-
-    //     calc.targetPointState.setV2(_v2);
-    // }
 
     public float GetMaxSpeed() => maxV1;
     public bool GetInPutV2Flag() => InputV2Flag;

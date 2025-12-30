@@ -26,25 +26,16 @@ public class SimulationManager : MonoBehaviour {
 
 
     public float[] time;      //時間
-    public Vector3[] points;   // 第一関節 位置座標ベクトル（x,y→X投影）
     public int n;
 
     private int i;//debugループカウンタ
 
     void Start() {
 
-        totalSteps = 100001;
-        currentStep = 0;
 
-        points = new Vector3[totalSteps];
+        InitializeSimulatinManager();
 
-        tMax = 500.0f;
 
-        isSimulationRunning = false;  // シミュレーション実行状態
-        enableDebugOutput = false;
-        isPaused = true;
-        isInitialSimulationRunning = false;
-        enableOutputSimulationData = true;
 
         // 出力ファイル設定
         string time = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
@@ -81,6 +72,32 @@ public class SimulationManager : MonoBehaviour {
         output.WriteLine(line1);
     }
 
+    void InitializeSimulatinManager()
+    {
+
+        totalSteps = 100001;
+        tMax = 500.0f;
+
+        currentStep = 0;
+
+        isSimulationRunning = false;  // シミュレーション実行状態
+        isPaused = true;
+        isInitialSimulationRunning = false;
+
+        enableOutputSimulationData = true;
+        enableDebugOutput = false;
+    }
+
+    void ResetSimulatinManager()
+    {
+        currentStep = 0;
+
+        isSimulationRunning = false;  // シミュレーション実行状態
+        isInitialSimulationRunning = false;
+        isPaused = true;
+    }
+    
+
     // Update is called once per frame
     void Update() {
         // キーボード入力処理
@@ -91,7 +108,8 @@ public class SimulationManager : MonoBehaviour {
             EndSimulation();
         }
     }
-    
+
+
     private void HandleInput()
     {
         // Sキーでシミュレーション開始 or 再スタート
@@ -216,17 +234,13 @@ public class SimulationManager : MonoBehaviour {
 
     public void ResetSimulation()
     {
-        isSimulationRunning = false;
-        isInitialSimulationRunning = false;
-        isPaused = false;
 
-        currentStep = 0;
+        Debug.Log("シミュレーションリセット中...");
 
-        // 数値計算シミュレーションのリセット(CalculationManager.cs1)
-        cal.InitializeCalculateSimulation();
+        ResetSimulatinManager();
+        cal.ResetCalculateManager();
 
-
-        Debug.Log("シミュレーションリセット");
+        Debug.Log("シミュレーションリセット完了");
 
         return;
     }
@@ -273,7 +287,7 @@ public class SimulationManager : MonoBehaviour {
 
         // m/s
         float v1_ms = cal.vehicleRobotState.GetU1();          // 車両速度
-        float u1_ms = cal.targetPointState.getV1();           // 目標点 前進速度
+        float u1_ms = cal.targetPointState.GetV1();           // 目標点 前進速度
 
         TargetPointMode mode = cal.targetPointState.GetMode();
 
@@ -282,10 +296,10 @@ public class SimulationManager : MonoBehaviour {
         float u1_kmh = u1_ms * 3.6f;
 
         // rad/s
-        float v2_rads = cal.targetPointState.getV2();
+        float v2_rads = cal.targetPointState.GetV2();
 
         // rad → deg
-        float theta_deg = cal.targetPointState.getTheta() * Mathf.Rad2Deg;
+        float theta_deg = cal.targetPointState.GetTheta() * Mathf.Rad2Deg;
         float phi1_deg = cal.vehicleRobotState.GetPhi1() * Mathf.Rad2Deg;
 
 

@@ -85,6 +85,18 @@ public class PsFinder
         scoreArray = new NativeArray<float>(Ns, Allocator.Persistent);
     }
 
+    public void Reset()
+    {
+        isInitialSeachedPs1 = false;
+        isInitialSeachedPs2 = false;
+
+        localU1Index = 0;
+        localU2Index = 0;
+
+        globalU1Index = 0;
+        globalU2Index = 0;
+    }
+
 
     public void StepPsFinder()
     {

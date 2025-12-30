@@ -56,8 +56,8 @@ public class ControlPointQueue
 
         // / --- 初回の過去・未来データ生成 ---
         Vector2 Tp0 = target.GetPosition();
-        float theta0 = target.getTheta();
-        float kappa0 = calc.targetPointState.getKappa();
+        float theta0 = target.GetTheta();
+        float kappa0 = calc.targetPointState.GetKappa();
 
         InitializePastQueue(Tp0, theta0);
         InitializeFuturePoints(Tp0, theta0, kappa0);

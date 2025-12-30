@@ -818,7 +818,7 @@ public class VehicleKinematics : MonoBehaviour
         // Debug.Log($"_d1thetaP2dds11:{_d1thetaP2dds11}, _d2thetaP2dds12:{_d2thetaP2dds12}, _d3thetaP2dds13:{_d3thetaP2dds13}");
 
         // 車両の制御入力w1, w3を目標点のv1, v2に対応
-        w1 = targetPointState.getV1();
+        w1 = targetPointState.GetV1();
 
         z33 = _d1;
         z32 = L1f1h3;

@@ -57,9 +57,9 @@ public class TargetPointRenderer : MonoBehaviour
         // Tp1は目標点の状態で移動
         // Tp2は後方車両、後輪間中点の座標に移動
         // // 前方目標点の初期設定
-        float Tp1theta = calc.targetPointState.getTheta();
-        float Tp1x = calc.targetPointState.getX();
-        float Tp1y = calc.targetPointState.getY();
+        float Tp1theta = calc.targetPointState.GetTheta();
+        float Tp1x = calc.targetPointState.GetX();
+        float Tp1y = calc.targetPointState.GetY();
 
         float targetPoint1Deg  = -Tp1theta * Mathf.Rad2Deg;
 
@@ -117,9 +117,9 @@ public class TargetPointRenderer : MonoBehaviour
         if(tp == CurrentTargetPoint.Tp1)
         {
             // Tp1 ← state の位置
-            float x = calc.targetPointState.getX();
-            float y = calc.targetPointState.getY();
-            float th = calc.targetPointState.getTheta();
+            float x = calc.targetPointState.GetX();
+            float y = calc.targetPointState.GetY();
+            float th = calc.targetPointState.GetTheta();
 
             targetPointPosition1 = new Vector3(x, 0.5f, y) * scale;
             targetPointRotation1 = Quaternion.Euler(0, -th * Mathf.Rad2Deg, 0);
@@ -134,9 +134,9 @@ public class TargetPointRenderer : MonoBehaviour
         else // Tp2 が現在のターゲット
         {
             // Tp2 ← state の位置
-            float x = calc.targetPointState.getX();
-            float y = calc.targetPointState.getY();
-            float th = calc.targetPointState.getTheta();
+            float x = calc.targetPointState.GetX();
+            float y = calc.targetPointState.GetY();
+            float th = calc.targetPointState.GetTheta();
 
             // Debug.Log($"x,y:{x}, {y}");
 

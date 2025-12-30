@@ -97,24 +97,24 @@ public class TargetPointState
             float x = vehicle.GetMidpointBetweenFrontWheelsOfFV().x;
             float y = vehicle.GetMidpointBetweenFrontWheelsOfFV().y;
 
-            // setX(x);
-            // setY(y);
+            // SetX(x);
+            // SetY(y);
 
-            setX(0.0f);
-            setY(0.0f);
+            SetX(0.0f);
+            SetY(0.0f);
         }
         else
         {
             float x = vehicle.GetMidpointBetweenRearWheelsOfSV().x;
             float y = vehicle.GetMidpointBetweenRearWheelsOfSV().y;
 
-            setX(x);
-            setY(y);
+            SetX(x);
+            SetY(y);
         }
 
-        setTheta(0.0f);
-        setV1(0.0f);
-        setV2(0.0f);
+        SetTheta(0.0f);
+        SetV1(0.0f);
+        SetV2(0.0f);
 
         runge = new RungeKutta(DIM, new Func<float[], float>[] {
             (x) => dynamics.f0(current),
@@ -131,26 +131,77 @@ public class TargetPointState
         runge.x_old[4] = current.theta;
     }
 
+    public void Reset(VehicleRobotState vehicle)
+    {
+
+        SetIsStop(true);
+        SetPrevIsStop(true);
+
+        SetCurrentMode(TargetPointMode.Parking);
+        SetPrevMode(TargetPointMode.Forward);
+
+        prevTotalS = 0.0f;
+
+        // 初期化時は前方の目標点を利用
+        SetCurrentTargetPoint(CurrentTargetPoint.Tp1);
+
+        SetTime(0.0f);
+        SetS(0.0f);
+
+        // Tp1だったら先頭車両前輪間中点に設定
+        // Tp2だったら後方車両後輪間中点に設定
+        if(GetCurrentTargetPoint() == CurrentTargetPoint.Tp1)
+        {
+            float x = vehicle.GetMidpointBetweenFrontWheelsOfFV().x;
+            float y = vehicle.GetMidpointBetweenFrontWheelsOfFV().y;
+
+            // SetX(x);
+            // SetY(y);
+
+            SetX(0.0f);
+            SetY(0.0f);
+        }
+        else
+        {
+            float x = vehicle.GetMidpointBetweenRearWheelsOfSV().x;
+            float y = vehicle.GetMidpointBetweenRearWheelsOfSV().y;
+
+            SetX(x);
+            SetY(y);
+        }
+
+        SetTheta(0.0f);
+        SetV1(0.0f);
+        SetV2(0.0f);
+
+        runge.x_old[0] = GetTime();
+        runge.x_old[1] = GetS();
+        runge.x_old[2] = GetX();
+        runge.x_old[3] = GetY();
+        runge.x_old[4] = GetTheta();
+    }
+
+
     public void updateTargetPointState(float dt)
     {
         // 入力は current.v1 / current.v2 にすでにセットされている
 
         // 積分前に現在のSを前回のSとして保存
-        prevTotalS = getS();
+        prevTotalS = GetS();
 
         // 現在の状態を元に積分
         // 目標点切り替えに対応
-        runge.x_old[2] = getX();
-        runge.x_old[3] = getY();
-        runge.x_old[4] = getTheta();
+        runge.x_old[2] = GetX();
+        runge.x_old[3] = GetY();
+        runge.x_old[4] = GetTheta();
 
         runge.UpdateStateRungeKutta(dt);
 
         // 結果を State に反映する
         SetTime(runge.x_new[0]);
         SetS(runge.x_new[1]);
-        setX(runge.x_new[2]);
-        setY(runge.x_new[3]);
+        SetX(runge.x_new[2]);
+        SetY(runge.x_new[3]);
 
         // 目標点が止まった時を検知して、その時のthetaを一時保存
         // 停止状態時は、そのtheta前後30degしか回転できないようにする
@@ -172,7 +223,7 @@ public class TargetPointState
             runge.x_new[4] = stoppedTheta + diff;
         }
 
-        setTheta(runge.x_new[4]);
+        SetTheta(runge.x_new[4]);
 
         runge.CommitStep();
     }
@@ -273,9 +324,9 @@ public class TargetPointState
 
         Debug.Log($"ChanegeTagetPointToTp1()");
 
-        setX(vehicle.GetMidpointBetweenFrontWheelsOfFV().x);
-        setY(vehicle.GetMidpointBetweenFrontWheelsOfFV().y);
-        setTheta(vehicle.GetTheta1());
+        SetX(vehicle.GetMidpointBetweenFrontWheelsOfFV().x);
+        SetY(vehicle.GetMidpointBetweenFrontWheelsOfFV().y);
+        SetTheta(vehicle.GetTheta1());
     }
 
 
@@ -291,9 +342,9 @@ public class TargetPointState
         // Debug.Log($"vehicle.GetMidpointBetweenRearWheelsOfSV().y:{vehicle.GetMidpointBetweenRearWheelsOfSV().y}");
 
 
-        setX(vehicle.GetMidpointBetweenRearWheelsOfSV().x);
-        setY(vehicle.GetMidpointBetweenRearWheelsOfSV().y);
-        setTheta(vehicle.GetTheta3());
+        SetX(vehicle.GetMidpointBetweenRearWheelsOfSV().x);
+        SetY(vehicle.GetMidpointBetweenRearWheelsOfSV().y);
+        SetTheta(vehicle.GetTheta3());
 
         // Debug.Log($"getX():{getX()}, getY():{getY()}");
     }
@@ -370,20 +421,20 @@ public class TargetPointState
     // Setter
     public void SetTime(float v) { current.t = v; }
     public void SetS(float v) { current.s = v; }
-    public void setX(float _x) { current.x = _x; }
-    public void setY(float _y) { current.y = _y; }
-    public void setTheta(float _theta) { current.theta = _theta; }
-    public void setV1(float _v1) { current.v1 = _v1; }
-    public void setV2(float _v2) { current.v2 = _v2; }
+    public void SetX(float _x) { current.x = _x; }
+    public void SetY(float _y) { current.y = _y; }
+    public void SetTheta(float _theta) { current.theta = _theta; }
+    public void SetV1(float _v1) { current.v1 = _v1; }
+    public void SetV2(float _v2) { current.v2 = _v2; }
 
     // Getter
-    public float getTime() => current.t;
-    public float getS() => current.s;
-    public float getX() => current.x;
-    public float getY() => current.y;
-    public float getTheta() => current.theta;
-    public float getV1() => current.v1;
-    public float getV2() => current.v2;
+    public float GetTime() => current.t;
+    public float GetS() => current.s;
+    public float GetX() => current.x;
+    public float GetY() => current.y;
+    public float GetTheta() => current.theta;
+    public float GetV1() => current.v1;
+    public float GetV2() => current.v2;
 
     public float GetPrevTotalS() => prevTotalS;
 
@@ -392,15 +443,14 @@ public class TargetPointState
     {
         Vector2 pos;
 
-        pos.x = getX();
-        pos.y = getY();
+        pos.x = GetX();
+        pos.y = GetY();
 
         return pos;
     }
 
 
-
-    public float getKappa()
+    public float GetKappa()
     {
         float v1, v2;
 
@@ -409,12 +459,12 @@ public class TargetPointState
         {
             // 仮にこの速度で走り始めた時
             v1 = 1.0f;
-            v2 = getV2();  // ステア角速度
+            v2 = GetV2();  // ステア角速度
 
         }else
         {
-            v1 = getV1();  // 前進速度
-            v2 = getV2();  // ステア角速度
+            v1 = GetV1();  // 前進速度
+            v2 = GetV2();  // ステア角速度
         }
 
         float kappa = v2 / v1;

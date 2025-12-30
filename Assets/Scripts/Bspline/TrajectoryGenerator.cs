@@ -115,24 +115,32 @@ public class TrajectoryGenerator
 
     }
 
+    public void Reset()
+    {
+        // 初回は必ず更新
+        isUpdateCPdataFlag = false;
+
+        calc.cpQueue.Initialize(dt, calc);
+        calc.cpSmooth.Initialize(Np, calc);
+
+        calc.cpResample.Initialize(smax_past);
+        
+        InitializeCurve();
+
+        Debug.Log($"Reset TrajectoryGenerator");
+    }
+
     public void InitializeCurve()
     {
-        // mergedNative = calc.cpQueue.GetMergedNative();
         pastNative = calc.cpQueue.GetPastNative();
-        controlPointsNative = calc.cpQueue.GetPastNative();
+        controlPointsNative = pastNative;
         smoothedNative = calc.cpSmooth.ApplyMovingAverage(controlPointsNative);
-        // Debug.Log($"a");
         resampledNative = calc.cpResample.ResampleByDistance(smoothedNative);
-        // Debug.Log($"b");
-        // bsplineNative = calc.bsplineGeometry.Approximate(resampledNative);
         calc.bsplineGeometry.Approximate(GetResampledManaged());
 
         calc.bsplineGeometry.Derivative1AllPoints();
 
         calc.psFinder.RebuildCache();
-        // Debug.Log($"c");
-        // calc.bsplineGeometry.Derivative1AllPoints();
-        // Debug.Log($"d");
     }
 
     public void GenerateBSplineCurve()
@@ -185,9 +193,9 @@ public class TrajectoryGenerator
     public void UpdatePastData()
     {
         Vector2 Tp = calc.targetPointState.GetPosition();
-        float theta = calc.targetPointState.getTheta();
-        float v1 = calc.targetPointState.getV1();
-        float kappa = calc.targetPointState.getKappa(); // dθ/ds
+        float theta = calc.targetPointState.GetTheta();
+        float v1 = calc.targetPointState.GetV1();
+        float kappa = calc.targetPointState.GetKappa(); // dθ/ds
 
         calc.cpQueue.Update(Tp, theta, v1, kappa);
     }

@@ -174,6 +174,25 @@ public class CalculationManager : MonoBehaviour
         OnInitialized?.Invoke();
     }
 
+    public void ResetCalculateManager()
+    {
+
+        targetPointCtrl.Reset();
+
+        targetPointState.Reset(vehicleRobotState);
+        vehicleRobotState.Reset();
+
+        trajectoryGenerator.Reset();
+
+        psFinder.Reset();
+
+        trajectoryGenerator.InitializeCurve();
+
+        // ここでイベント発火
+        OnInitialized?.Invoke();
+    }
+
+
     void Update()
     {
         if (sim.isSimulationRunning)
@@ -205,7 +224,7 @@ public class CalculationManager : MonoBehaviour
     
     void PerformCalculationStep(float _dt)
     {
-        float time = targetPointState.getTime();
+        float time = targetPointState.GetTime();
 
         // 進捗表示
         if (sim.currentStep % 1000 == 0)
@@ -272,13 +291,13 @@ public class CalculationManager : MonoBehaviour
         {
 
             // データ保存
-            data.time = targetPointState.getTime();
-            data.s = targetPointState.getS();
-            data.x = targetPointState.getX();
-            data.y = targetPointState.getY();
-            data.theta = targetPointState.getTheta();
-            data.v1 = targetPointState.getV1();
-            data.v2 = targetPointState.getV2();
+            data.time = targetPointState.GetTime();
+            data.s = targetPointState.GetS();
+            data.x = targetPointState.GetX();
+            data.y = targetPointState.GetY();
+            data.theta = targetPointState.GetTheta();
+            data.v1 = targetPointState.GetV1();
+            data.v2 = targetPointState.GetV2();
 
             data.x1 = vehicleRobotState.GetX1();
             data.y1 = vehicleRobotState.GetY1();
@@ -440,7 +459,7 @@ public class CalculationManager : MonoBehaviour
                 bsplineGeometry.GetFrontDerivative1(), 
                 bsplineGeometry.GetRearDerivative1(), 
                 ds, 
-                targetPointState.getTime());
+                targetPointState.GetTime());
         }
         else{
             Debug.Log("デバックモードがOFFのためファイル出力しません.");

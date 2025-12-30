@@ -88,14 +88,45 @@ public class VehicleRobotState
             (x) => dynamics.f7(current),
         });
 
-        runge.x_old[0] = current.t;
-        runge.x_old[1] = current.x1;
-        runge.x_old[2] = current.y1;
-        runge.x_old[3] = current.phi1;
-        runge.x_old[4] = current.theta1;
-        runge.x_old[5] = current.phi2;
-        runge.x_old[6] = current.theta2;
-        runge.x_old[7] = current.theta3;
+        runge.x_old[0] = GetTime();
+        runge.x_old[1] = GetX1();
+        runge.x_old[2] = GetY1();
+        runge.x_old[3] = GetPhi1();
+        runge.x_old[4] = GetTheta1();
+        runge.x_old[5] = GetPhi2();
+        runge.x_old[6] = GetTheta2();
+        runge.x_old[7] = GetTheta3();
+    }
+
+    public void Reset()
+    {
+
+        float l1 = p.GetL1();
+        float l2 = p.GetL2();
+
+        SetTime(0.0f);
+        SetX1(-l1);
+        SetY1(0.0f);
+        SetPhi1(0.0f);
+        SetTheta1(0.0f);
+        SetPhi2(0.0f);
+        SetTheta2(0.0f);
+        SetTheta3(0.0f);
+        SetX2(-(l1+l2));
+        SetY2(0.0f);
+        SetX2(-(l1 + l2/2f));
+        SetY2(0.0f);
+
+        Debug.Log($"Reset vehicle.x1, vehicle.y1:{GetX1()}, {GetY1()}");
+
+        runge.x_old[0] = GetTime();
+        runge.x_old[1] = GetX1();
+        runge.x_old[2] = GetY1();
+        runge.x_old[3] = GetPhi1();
+        runge.x_old[4] = GetTheta1();
+        runge.x_old[5] = GetPhi2();
+        runge.x_old[6] = GetTheta2();
+        runge.x_old[7] = GetTheta3();
     }
 
     public void updateVehicleRobotState(float dt)
