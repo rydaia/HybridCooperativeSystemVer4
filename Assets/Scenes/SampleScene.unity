@@ -7755,6 +7755,7 @@ MonoBehaviour:
   _d2c2ds22: 0
   _squaredD1c1ds11: 0
   _d1: 0
+  dMax: 0
   _squaredD1: 0
   _phi1: 0
   _phi2: 0
@@ -12481,6 +12482,10 @@ PrefabInstance:
       value: LWheelrotFV
       objectReference: {fileID: 0}
     - target: {fileID: 8028362246834177165, guid: 5ed0ed945ab390c4782eb5ba4fc9e0e3, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8045126395436691593, guid: 5ed0ed945ab390c4782eb5ba4fc9e0e3, type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
