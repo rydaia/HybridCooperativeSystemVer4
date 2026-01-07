@@ -59,10 +59,12 @@ public class VehicleRobotState
         float l1 = p.GetL1();
         float l2 = p.GetL2();
 
+        float distance = 0.3f;
+
         Debug.Log($"l1:{l1}");
 
         SetTime(0.0f);
-        SetX1(-l1);
+        SetX1(-(l1+distance));
         SetY1(0.0f);
         SetPhi1(0.0f);
         SetTheta1(0.0f);
@@ -71,8 +73,8 @@ public class VehicleRobotState
         SetTheta3(0.0f);
         SetX2(-(l1+l2));
         SetY2(0.0f);
-        SetX2(-(l1 + l2/2f));
-        SetY2(0.0f);
+        SetX3(-(l1 + l2/2f));
+        SetY3(0.0f);
 
         Debug.Log($"Initital vehicle.x1, vehicle.y1:{GetX1()}, {GetY1()}");
 
@@ -104,6 +106,9 @@ public class VehicleRobotState
         float l1 = p.GetL1();
         float l2 = p.GetL2();
 
+        float distance = 0.3f;
+
+
         SetTime(0.0f);
         SetX1(-l1);
         SetY1(0.0f);
@@ -114,8 +119,8 @@ public class VehicleRobotState
         SetTheta3(0.0f);
         SetX2(-(l1+l2));
         SetY2(0.0f);
-        SetX2(-(l1 + l2/2f));
-        SetY2(0.0f);
+        SetX3(-(l1 + l2/2f));
+        SetY3(0.0f);
 
         Debug.Log($"Reset vehicle.x1, vehicle.y1:{GetX1()}, {GetY1()}");
 

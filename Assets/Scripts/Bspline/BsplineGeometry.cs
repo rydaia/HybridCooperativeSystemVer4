@@ -762,7 +762,7 @@ public class BsplineGeometry
     // frontPoints 上の端点から経路に沿って 0.5m 戻った点を返す
     public float2 GetTargetOfFrontPoints()
     {
-        float targetDistance = 0.45f;
+        float targetDistance = 0.1f;
 
         float accumulated = 0f;
 

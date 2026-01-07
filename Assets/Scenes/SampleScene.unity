@@ -6821,12 +6821,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: baaa706dd1571654dba38aae4cd8342e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitMarkerRoot
-  sim: {fileID: 1456485574}
   dotPrefab: {fileID: 3960438848512046666, guid: c9e64f8aec82da048955b5bf0a40ef01, type: 3}
   obstacleMask:
     serializedVersion: 2
     m_Bits: 8
-  dotScale: 0.05
+  dotScale: 0.1
   offset: 0.003
 --- !u!1 &1040309599
 GameObject:
@@ -13878,11 +13877,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 313374169690930301, guid: 5ed0ed945ab390c4782eb5ba4fc9e0e3, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 372395810428942633, guid: 5ed0ed945ab390c4782eb5ba4fc9e0e3, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 404733713208569754, guid: 5ed0ed945ab390c4782eb5ba4fc9e0e3, type: 3}
       propertyPath: m_IsTrigger
@@ -14150,7 +14149,7 @@ PrefabInstance:
       objectReference: {fileID: 432880276}
     - target: {fileID: 4893959646490923384, guid: 5ed0ed945ab390c4782eb5ba4fc9e0e3, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5029249366410130394, guid: 5ed0ed945ab390c4782eb5ba4fc9e0e3, type: 3}
       propertyPath: m_Name
@@ -23498,9 +23497,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: dot
       objectReference: {fileID: 0}
-    - target: {fileID: 3960438848512046666, guid: c9e64f8aec82da048955b5bf0a40ef01, type: 3}
-      propertyPath: m_Layer
-      value: 6
+    - target: {fileID: 7337016532709401646, guid: c9e64f8aec82da048955b5bf0a40ef01, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7337016532709401646, guid: c9e64f8aec82da048955b5bf0a40ef01, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7337016532709401646, guid: c9e64f8aec82da048955b5bf0a40ef01, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7337016532709401646, guid: c9e64f8aec82da048955b5bf0a40ef01, type: 3}
       propertyPath: m_LocalPosition.x

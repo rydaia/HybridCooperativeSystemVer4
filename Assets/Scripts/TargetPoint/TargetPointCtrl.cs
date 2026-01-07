@@ -336,39 +336,51 @@ public class TargetPointCtrl : MonoBehaviour
     //     calc.targetPointState.SetV2(Mathf.Clamp(_v2, minV2, maxV2));
     // }
 
+
+    // ハンドルの入力に応じて目標の向きを決める(目標のv2ではなく)
+    // 例えばsteer が0.5だったら30degreeなど。
+    // その角度で回るように
     private void HandleSteerInput_G923()
     {
         float steer = g923Steer1.action.ReadValue<float>(); // -1 ～ +1
 
-        float steerAccel = 8.5f;     // ステア応答の速さ
-        float steerReturn = 6.0f;    // 手放した時の戻り
-        float steerDeadZone = 0.00f;
-        float dt = 0.01f;
+        float kappaMax = 0.6f; // [1/m] 最大曲率（要調整）
+        float kappa = steer * kappaMax;
+
         float maxV2 = 0.85f;
+        float minV2 = -0.85f;
 
-        float targetV2 = 0f;
+        float v1 = calc.targetPointState.GetV1();
 
-        if (Mathf.Abs(steer) > steerDeadZone)
-        {
-            // ハンドル入力 → 目標ステア角速度
-            targetV2 = steer * maxV2;
-            InputV2Flag = true;
-        }
-        else
-        {
-            // 手放したら自然に戻る
-            targetV2 = 0f;
-            InputV2Flag = false;
-        }
+        float v2 = v1 * kappa;
 
-        // 現在の v2 を目標に追従させる
-        _v2 = Mathf.MoveTowards(
-            _v2,
-            targetV2,
-            (InputV2Flag ? steerAccel : steerReturn) * dt
-        );
+        // float steerAccel = 8.5f;     // ステア応答の速さ
+        // float steerReturn = 6.0f;    // 手放した時の戻り
+        // float steerDeadZone = 0.00f;
+        // float dt = 0.01f;
 
-        calc.targetPointState.SetV2(Mathf.Clamp(_v2, minV2, maxV2));
+
+
+        // float targetV2 = 0f;
+
+        // if (Mathf.Abs(steer) > steerDeadZone)
+        // {
+        //     // ハンドル入力 → 目標ステア角速度
+        //     targetV2 = steer * maxV2;
+        //     InputV2Flag = true;
+        // }
+
+        // // 現在の v2 を目標に追従させる
+        // _v2 = Mathf.MoveTowards(
+        //     _v2,
+        //     targetV2,
+        //     steerAccel * dt
+        // );
+
+        Debug.Log($"steer:{steer}, kappa:{kappa}, v2:{v2}, R:{1f / kappa}");
+
+
+        calc.targetPointState.SetV2(Mathf.Clamp(v2, minV2, maxV2));
     }
 
 

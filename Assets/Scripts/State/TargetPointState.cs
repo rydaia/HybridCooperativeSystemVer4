@@ -83,6 +83,9 @@ public class TargetPointState
 
         prevTotalS = 0.0f;
 
+        float distance = 0.3f;
+
+
         // 初期化時は前方の目標点を利用
         SetCurrentTargetPoint(CurrentTargetPoint.Tp1);
 
@@ -100,7 +103,7 @@ public class TargetPointState
             // SetX(x);
             // SetY(y);
 
-            SetX(-3.0f);
+            SetX(-3.45f + distance);
             SetY(0.0f);
         }
         else
@@ -148,6 +151,9 @@ public class TargetPointState
         SetTime(0.0f);
         SetS(0.0f);
 
+        float distance = 0.3f;
+
+
         // Tp1だったら先頭車両前輪間中点に設定
         // Tp2だったら後方車両後輪間中点に設定
         if(GetCurrentTargetPoint() == CurrentTargetPoint.Tp1)
@@ -158,7 +164,8 @@ public class TargetPointState
             // SetX(x);
             // SetY(y);
 
-            SetX(0.0f);
+            // SetX(0.0f);
+            SetX(-3.45f + distance);
             SetY(0.0f);
         }
         else
