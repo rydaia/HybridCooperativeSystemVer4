@@ -6821,7 +6821,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: baaa706dd1571654dba38aae4cd8342e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitMarkerRoot
-  sim: {fileID: 1456485574}
+  sim: {fileID: 0}
   dotPrefab: {fileID: 3960438848512046666, guid: c9e64f8aec82da048955b5bf0a40ef01, type: 3}
   obstacleMask:
     serializedVersion: 2
