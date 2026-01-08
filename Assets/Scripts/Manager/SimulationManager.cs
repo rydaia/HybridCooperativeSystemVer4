@@ -103,6 +103,8 @@ public class SimulationManager : MonoBehaviour {
         // キーボード入力処理
         HandleInput();
 
+        HandleTeleportInput();
+
         if(currentStep >= totalSteps)
         {
             EndSimulation();
@@ -284,6 +286,7 @@ public class SimulationManager : MonoBehaviour {
     void OnGUI()
     {
         if (this == null) return;
+        if (cal == null) return;
 
         // m/s
         float v1_ms = cal.vehicleRobotState.GetU1();          // 車両速度
@@ -321,6 +324,38 @@ public class SimulationManager : MonoBehaviour {
 
 
         GUILayout.EndArea();
+
+
+        // ステージ移動候補表示
+        if (isPaused && !isSimulationRunning)
+        {
+            GUILayout.BeginArea(new Rect(10, 280, 320, 200));
+            GUILayout.Label("Teleport (paused only)");
+            for (int i = 0; i < TeleportConfig.teleportPoints.Length; i++)
+            {
+                var p = TeleportConfig.teleportPoints[i];
+                GUILayout.Label($"{i + 1}: {p.stageName} (x={p.x}, y={p.y}, theta={p.theta})");
+            }
+            GUILayout.EndArea();
+        }
     }
 
+    // ステージ移動の入力受付
+    private void HandleTeleportInput()
+    {
+        if (!isPaused || isSimulationRunning) return;
+        if (cal == null) return;
+
+        for (int i = 0; i < TeleportConfig.teleportPoints.Length && i < 9; i++)
+        {
+            KeyCode alpha = KeyCode.Alpha1 + i;
+            KeyCode keypad = KeyCode.Keypad1 + i;
+
+            if (Input.GetKeyDown(alpha) || Input.GetKeyDown(keypad))
+            {
+                cal.TeleportVehicleTo(TeleportConfig.teleportPoints[i]);
+                break;
+            }
+        }
+    }
 }

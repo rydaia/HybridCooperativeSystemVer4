@@ -467,5 +467,17 @@ public class CalculationManager : MonoBehaviour
         }
     }
 
+    public void TeleportVehicleTo(TeleportPoint p) // ステージ移動
+    {
+        vehicleRobotState.Teleport(p.x, p.y, p.theta);
+        targetPointState.TeleportToVehicle(vehicleRobotState);
+        targetPointCtrl.Reset();
+
+        trajectoryGenerator.Reset();
+        psFinder.Reset();
+        trajectoryGenerator.InitializeCurve();
+
+        sim.currentStep = 0;
+    }
 }
 

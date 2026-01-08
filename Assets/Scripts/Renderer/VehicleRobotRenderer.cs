@@ -139,7 +139,8 @@ public class VehicleRobotRenderer : MonoBehaviour
     void FixedUpdate() 
     {
         if (sim == null) return;
-        if (sim.isSimulationRunning)
+        if (calc == null) return;
+        if (sim.isSimulationRunning || sim.isPaused)
         {
             ComputePositionAndRotation();
         }
@@ -199,13 +200,16 @@ public class VehicleRobotRenderer : MonoBehaviour
         steerRotationOfSV = Quaternion.Euler(0f, steerDegOfSV, 0f);
 
         // ホイール
-        float wheelOmegaOfFV = (firstVehicleSpeed  / wheelRadius) * Time.fixedDeltaTime;
-        wheelAngleOfFV += -wheelOmegaOfFV * Mathf.Rad2Deg;
-        wheelRotationOfFV = Quaternion.Euler( 0f, 0f, wheelAngleOfFV);
-        
-        float wheelOmegaOfSV = (secondVehicleSpeed / wheelRadius) * Time.fixedDeltaTime;
-        wheelAngleOfSV += -wheelOmegaOfSV * Mathf.Rad2Deg;
-        wheelRotationOfSV = Quaternion.Euler( 0f, 0f, -wheelAngleOfSV); //右手から左手に変換
+        if (sim.isSimulationRunning) // 停止中はタイヤ回転しない
+        {
+            float wheelOmegaOfFV = (firstVehicleSpeed  / wheelRadius) * Time.fixedDeltaTime;
+            wheelAngleOfFV += -wheelOmegaOfFV * Mathf.Rad2Deg;
+            wheelRotationOfFV = Quaternion.Euler( 0f, 0f, wheelAngleOfFV);
+            
+            float wheelOmegaOfSV = (secondVehicleSpeed / wheelRadius) * Time.fixedDeltaTime;
+            wheelAngleOfSV += -wheelOmegaOfSV * Mathf.Rad2Deg;
+            wheelRotationOfSV = Quaternion.Euler( 0f, 0f, -wheelAngleOfSV); //右手から左手に変換
+        }
     }
 
 
@@ -241,7 +245,8 @@ public class VehicleRobotRenderer : MonoBehaviour
     // Update is called once per frame
     void LateUpdate() {
         if (sim == null) return;
-        if (sim.isSimulationRunning)
+        if (calc == null) return;
+        if (sim.isSimulationRunning || sim.isPaused)
         {
             UpdatePositions();
         }

@@ -83,7 +83,8 @@ public class TargetPointRenderer : MonoBehaviour
     void FixedUpdate() 
     {
         if (sim == null) return;
-        if (sim.isSimulationRunning)
+        if (calc == null) return;
+        if (sim.isSimulationRunning || sim.isPaused)
         {
             ComputePositionAndRotation();
         }
@@ -162,7 +163,8 @@ public class TargetPointRenderer : MonoBehaviour
     }
     // Update is called once per frame
     void LateUpdate() {
-        if (sim.isSimulationRunning)
+        if (calc == null) return;
+        if (sim.isSimulationRunning || sim.isPaused)
         {
             UpdatePositions();
         }

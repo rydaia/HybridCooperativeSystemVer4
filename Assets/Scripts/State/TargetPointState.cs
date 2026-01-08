@@ -482,4 +482,55 @@ public class TargetPointState
 
         return kappa;
     }
+
+    // ステージ移動時、目標点を車両と一緒に移動
+    public void TeleportToVehicle(VehicleRobotState vehicle)
+    {
+        if (runge == null) // runge未初期化警告
+        {
+            Debug.LogWarning("TeleportToVehicle called before TargetPointState.Initialize()");
+            return;
+        }
+
+        TargetPointMode mode = GetMode();
+        CurrentTargetPoint newTP;
+
+        if (mode == TargetPointMode.Back)
+        {
+            newTP = CurrentTargetPoint.Tp2;
+        }
+        else
+        {
+            newTP = CurrentTargetPoint.Tp1;
+        }
+
+        SetCurrentTargetPoint(newTP);
+
+        if (newTP == CurrentTargetPoint.Tp1)
+        {
+            SetX(vehicle.GetMidpointBetweenFrontWheelsOfFV().x);
+            SetY(vehicle.GetMidpointBetweenFrontWheelsOfFV().y);
+            SetTheta(vehicle.GetTheta1());
+        }
+        else
+        {
+            SetX(vehicle.GetMidpointBetweenRearWheelsOfSV().x);
+            SetY(vehicle.GetMidpointBetweenRearWheelsOfSV().y);
+            SetTheta(vehicle.GetTheta3());
+        }
+
+        SetV1(0.0f);
+        SetV2(0.0f);
+        SetIsStop(true);
+        SetPrevIsStop(true);
+        SetTime(0.0f);
+        SetS(0.0f);
+
+        runge.x_old[0] = GetTime();
+        runge.x_old[1] = GetS();
+        runge.x_old[2] = GetX();
+        runge.x_old[3] = GetY();
+        runge.x_old[4] = GetTheta();
+
+    }
 }

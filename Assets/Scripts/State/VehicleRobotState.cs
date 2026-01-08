@@ -295,4 +295,47 @@ public class VehicleRobotState
 
         return ret;
     }
+
+    // ステージ移動
+    public void Teleport(float x, float y, float theta)
+    {
+        if (runge == null) // runge未初期化警告
+        {
+            Debug.LogWarning("Teleport called before VehicleRobotState.Initialize()");
+            return;
+        }
+
+        SetTime(0.0f); // 時間を維持したいなら削除可
+
+        SetX1(x);
+        SetY1(y);
+        SetTheta1(theta);
+
+        SetPhi1(0.0f);
+        SetPhi2(0.0f);
+        SetTheta2(theta);
+        SetTheta3(theta);
+
+        float l2 = p.GetL2();
+
+        float x2 = x - l2 * Mathf.Cos(theta);
+        float y2 = y - l2 * Mathf.Sin(theta);
+        SetX2(x2);
+        SetY2(y2);
+
+        float x3 = x - (l2 / 2f) * Mathf.Cos(theta);
+        float y3 = y - (l2 / 2f) * Mathf.Sin(theta);
+        SetX3(x3);
+        SetY3(y3);
+
+        // Runge-Kuttaの履歴を更新（初期化済みである前提）
+        runge.x_old[0] = GetTime();
+        runge.x_old[1] = GetX1();
+        runge.x_old[2] = GetY1();
+        runge.x_old[3] = GetPhi1();
+        runge.x_old[4] = GetTheta1();
+        runge.x_old[5] = GetPhi2();
+        runge.x_old[6] = GetTheta2();
+        runge.x_old[7] = GetTheta3();
+    }
 }

@@ -344,7 +344,7 @@ public class TargetPointCtrl : MonoBehaviour
     {
         float steer = g923Steer1.action.ReadValue<float>(); // -1 ～ +1
 
-        float kappaMax = 0.6f; // [1/m] 最大曲率（要調整）
+        float kappaMax = 0.3f; // [1/m] 最大曲率（要調整）
         float kappa = steer * kappaMax;
 
         float maxV2 = 0.85f;
