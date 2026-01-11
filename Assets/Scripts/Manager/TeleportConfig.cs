@@ -20,7 +20,7 @@ public class TeleportConfig
     public static readonly TeleportPoint[] teleportPoints =
     {
         new TeleportPoint("practice", 0f, 0f, 0f),
-        new TeleportPoint("stage1", -400f, 200f, 0f),
-        new TeleportPoint("stage2", -400f, 200f, 0f),
+        new TeleportPoint("stage1", -310f, 215f, 0f),
+        new TeleportPoint("stage2", -328f, 114f, 0f),
     };
 }

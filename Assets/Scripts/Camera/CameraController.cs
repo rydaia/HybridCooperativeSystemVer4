@@ -1,54 +1,94 @@
-// using System.Collections;
-// using System.Collections.Generic;
-// using UnityEngine;
-// using Unity.Cinemachine;
+using UnityEngine;
 
-// public class CameraController : MonoBehaviour {
+[System.Serializable]
+public struct TeleportCameraPoint
+{
+    public string stageName;
+    public Vector3 position;
+    public Vector3 eulerAngles; // 見下ろし角（回転）
+    public float size;
 
-//     [Header("Camera References")]
-//     [SerializeField] private CinemachineCamera followCamera;
+    public TeleportCameraPoint(string stageName, Vector3 position, Vector3 eulerAngles, float size)
+    {
+        this.stageName = stageName;
+        this.position = position;
+        this.eulerAngles = eulerAngles;
+        this.size = size;
+    }
+}
 
-    
-//     [Header("Target References")]
-//     [SerializeField] private Transform followTarget;
-    
-    
-//     [Header("Camera Settings")]
-//     [SerializeField] private float followDistance;
-//     [SerializeField] private float followHeight;
-    
+public static class TeleportCameraConfig
+{
+    public static readonly TeleportCameraPoint[] teleportPoints =
+    {
+        new TeleportCameraPoint("practice",
+            new Vector3(0f, 100f, 0f),
+            new Vector3(90f, 0f, 0f),
+            50f
+        ),
+        new TeleportCameraPoint("stage1",
+            new Vector3(-280f, 50f, 230f),
+            new Vector3(90f, 0f, 0f),
+            50f
+        ),
+        new TeleportCameraPoint("stage2",
+            new Vector3(-290f, 50f, 100f),
+            new Vector3(90f, 90f, 0f),
+            50f
+        ),
+    };
+}
 
-//     void Start() {
-//         followDistance = 3f;
-//         followHeight = 4f;
-        
-//         SetupCameras();
-        
-//     }
+public class CameraController : MonoBehaviour
+{
+    [Header("Top View")]
+    [SerializeField] private Transform stageTop;
+    [SerializeField] private Camera topCamera;
 
-//     // Update is called once per frame
-//     void Update() {
-//     }
+    void Awake()
+    {
+        if (topCamera != null)
+        {
+            topCamera.orthographic = true; // 俯瞰なら固定しちゃうと安全
+        }
+    }
 
-//     // 各々のカメラモードの処理内容
-//     void SetupCameras() {
-//         if (followTarget == null) return;
+    void Start()
+    {
+        // Display2 を有効化
+        if (Display.displays.Length > 1)
+            Display.displays[1].Activate();
+    }
 
-//         SetupFollowViewCamera();
-//     }
+    void Update()
+    {
+        HandleInput();
+    }
 
+    private void HandleInput()
+    {
+        for (int i = 0; i < TeleportCameraConfig.teleportPoints.Length; i++)
+        {
+            var alpha = (KeyCode)((int)KeyCode.Alpha1 + i);
+            var keypad = (KeyCode)((int)KeyCode.Keypad1 + i);
 
-//     void SetupFollowViewCamera()
-//     {
-//         if (followCamera == null || followTarget == null) return;
+            if (Input.GetKeyDown(alpha) || Input.GetKeyDown(keypad))
+            {
+                TeleportCamera(TeleportCameraConfig.teleportPoints[i]);
+                break;
+            }
+        }
+    }
 
-//         followCamera.Follow = followTarget;
-//         followCamera.LookAt = followTarget;
+    private void TeleportCamera(TeleportCameraPoint p)
+    {
+        if (stageTop == null || topCamera == null) return;
 
-//         var follow = followCamera.GetComponent<CinemachineFollow>();
-//         if (follow != null)
-//         {
-//             follow.FollowOffset = new Vector3(0, 15, -10);
-//         }
-//     }
-// }
+        stageTop.SetPositionAndRotation(
+            p.position,
+            Quaternion.Euler(p.eulerAngles)
+        );
+
+        topCamera.orthographicSize = p.size;
+    }
+}
