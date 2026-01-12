@@ -91,6 +91,9 @@ public class CalculationManager : MonoBehaviour
         public float rx1, ry1;
         public float rx2, ry2;
         public float cs1, cs2;
+
+        public float d1cs1ds11, d2cs1ds11;
+        public float d1cs2ds21, d2cs2ds22;
         public float d1rx1du11, d1ry1du11;
         public float d2rx1du12, d2ry1du12;
         public float d3rx1du13, d3ry1du13;
@@ -344,6 +347,11 @@ public class CalculationManager : MonoBehaviour
             data.cs1 = pathKinematics.GetCs1();
             data.cs2 = pathKinematics.GetCs2();
 
+            data.d1cs1ds11 = pathKinematics.GetD1c1ds11();
+            data.d2cs1ds11 = pathKinematics.GetD2c1ds12();
+            data.d1cs2ds21 = pathKinematics.GetD1c2ds21();
+            data.d2cs2ds22 = pathKinematics.GetD2c2ds22();
+
             data.d1rx1du11 = bsplineGeometry.GetD1Rx1du11();
             data.d1ry1du11 = bsplineGeometry.GetD1Ry1du11();
             data.d2rx1du12 = bsplineGeometry.GetD2Rx1du12();
@@ -410,7 +418,7 @@ public class CalculationManager : MonoBehaviour
             "{24:F6},{25:F6}," +
             "{26:F6},{27:F6}," +
             "{28:F6},{29:F6}," + 
-            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6},{38:F6},{39:F6},{40:F6},{41:F6},{42:F6},{43:F6},{44:F6},{45:F6},{46:F6},{47:F6},{48:F6}\n",
+            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6},{38:F6},{39:F6},{40:F6},{41:F6},{42:F6},{43:F6},{44:F6},{45:F6},{46:F6},{47:F6},{48:F6},{49:F6},{50:F6},{51:F6},{52:F6}\n",
             d.time,
             d.s,
             d.x, d.y,
@@ -430,6 +438,8 @@ public class CalculationManager : MonoBehaviour
             d.d4rx1du14, d.d4ry1du14,
             d.rx2, d.ry2,
             d.cs1, d.cs2,
+            d.d1cs1ds11, d.d2cs1ds11,
+            d.d1cs2ds21, d.d2cs2ds22,
             d.thetaT1, d.thetaT2, d.thetaP2d, d.thetaP2, d.thetaP2d - d.thetaP2,
             d.d1, d.d2,
             d.w1, d.w2, d.w3,
@@ -489,7 +499,6 @@ public class CalculationManager : MonoBehaviour
         psFinder.Reset();
         trajectoryGenerator.InitializeCurve();
 
-        sim.currentStep = 0;
     }
 }
 

@@ -128,4 +128,11 @@ public sealed class HitMarkerPart : MonoBehaviour
     {
         root?.Exit(self, other);
     }
+
+    public void ResetHitMarker()
+    {
+        stopped = false;
+        Debug.Log("HitMarker Reset");
+
+    }
 }

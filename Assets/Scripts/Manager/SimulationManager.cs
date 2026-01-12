@@ -23,8 +23,15 @@ public class SimulationManager : MonoBehaviour {
     public bool isInitialSimulationRunning = false;
     public bool enableOutputSimulationData = true;
 
+    public bool enableGUIDetailMode = true;
+
     [Header("シミュレーションマネージャー")]
     public CalculationManager cal;
+
+    public TeleportConfig teleport;
+
+    public HitMarkerPart hitMarkerPart;
+
 
 
     public float[] time;      //時間
@@ -57,6 +64,13 @@ public class SimulationManager : MonoBehaviour {
 
         enableOutputSimulationData = true;
         enableDebugOutput = false;
+
+        enableGUIDetailMode = false;
+
+        
+        teleport = new TeleportConfig();
+        hitMarkerPart = new HitMarkerPart();
+
     }
 
     void ResetSimulatinManager()
@@ -137,6 +151,8 @@ public class SimulationManager : MonoBehaviour {
             }
         }
 
+
+        // B
         if (Input.GetKeyDown(KeyCode.B))
         {
             if(isPaused)
@@ -148,7 +164,22 @@ public class SimulationManager : MonoBehaviour {
             }
         }
 
-        // B
+        // G
+        // GUIの表示モード
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+
+            if(!enableGUIDetailMode)
+            {
+                enableGUIDetailMode = true;
+                Debug.Log("GUI 詳細モード ON");
+            }else
+            {
+                enableGUIDetailMode = false;
+                Debug.Log("GUI 詳細モード OFF");
+            }
+        }
+
     }
 
     public void StartSimulation()
@@ -184,6 +215,8 @@ public class SimulationManager : MonoBehaviour {
                 "d4rx1du14", "d4ry1du14",
                 "rx2", "ry2",
                 "cs1", "cs2",
+                "d1cs1ds11", "d2cs1ds11",
+                "d1cs2ds21", "d2cs2ds22",
                 "thetaT1", "thetaT2", "thetaP2d", "thetaP2", "thetaP2d - thetaP2",
                 "d1", "d2", 
                 "vehicle.w1", "vehicle.w2", "vehicle.w3", "steerInput"
@@ -250,6 +283,8 @@ public class SimulationManager : MonoBehaviour {
 
         ResetSimulatinManager();
 
+        hitMarkerPart.ResetHitMarker();
+
 
 
         if (cal != null)
@@ -308,10 +343,11 @@ public class SimulationManager : MonoBehaviour {
 
         // time
         float time = cal.vehicleRobotState.GetTime();  
+        float time1 = cal.targetPointState.GetTime();  
 
         // m/s
-        float v1_ms = cal.vehicleRobotState.GetU1();          // 車両速度
-        float u1_ms = cal.targetPointState.GetV1();           // 目標点 前進速度
+        float u1_ms = cal.vehicleRobotState.GetU1();          // 車両速度
+        float v1_ms = cal.targetPointState.GetV1();           // 目標点 前進速度
 
         TargetPointMode mode = cal.targetPointState.GetMode();
 
@@ -329,29 +365,38 @@ public class SimulationManager : MonoBehaviour {
 
         GUILayout.BeginArea(new Rect(10, 10, 260, 260));
 
-        GUILayout.Label($"current step: {currentStep}", GUI.skin.box);
+        // GUILayout.Label($"current step: {currentStep}", GUI.skin.box);
 
         GUILayout.Label($"sim count: {simulationCount}", GUI.skin.box);
 
-        GUILayout.Label($"time state: {time}", GUI.skin.box);
+        GUILayout.Label($"time: {time}", GUI.skin.box);
 
         GUILayout.Label($"TargetPoint Mode: {mode}", GUI.skin.box);
 
-        GUILayout.Label($"TargetPoint u1: {u1_kmh:F6} km/h", GUI.skin.box);
+        GUILayout.Label($"Vehicle Speed: {u1_kmh:F6} km/h", GUI.skin.box);
 
-        GUILayout.Label($"TargetPoint u1: {u1_ms:F6} m/s", GUI.skin.box);
+        GUILayout.Label($"stage: {teleport.GetCurrentStage().stageName}", GUI.skin.box);
 
-        GUILayout.Label($"TargetPoint v2: {v2_rads:F2} rad/s", GUI.skin.box);
 
-        GUILayout.Label($"TargetPoint θ: {theta_deg:F1} deg", GUI.skin.box);
 
-        GUILayout.Label($"Vehicle Speed: {v1_ms:F6} m/s", GUI.skin.box);
+        // GUILayout.Label($"time1 TP state: {time1}", GUI.skin.box);
 
-        GUILayout.Label($"Vehicle φ: {phi1_deg:F1} deg", GUI.skin.box);
+        if(enableGUIDetailMode)
+        {
+            GUILayout.Label($"TargetPoint v1: {v1_ms:F6} m/s", GUI.skin.box);
 
+            GUILayout.Label($"TargetPoint v1: {v1_kmh:F6} km/h", GUI.skin.box);
+
+            GUILayout.Label($"TargetPoint v2: {v2_rads:F2} rad/s", GUI.skin.box);
+
+            GUILayout.Label($"TargetPoint θ: {theta_deg:F1} deg", GUI.skin.box);
+
+            GUILayout.Label($"Vehicle Speed: {u1_ms:F6} m/s", GUI.skin.box);
+
+            GUILayout.Label($"Vehicle φ: {phi1_deg:F1} deg", GUI.skin.box);
+        }
 
         GUILayout.EndArea();
-
 
         // ステージ移動候補表示
         if (isPaused && !isSimulationRunning)
@@ -373,14 +418,34 @@ public class SimulationManager : MonoBehaviour {
         if (!isPaused || isSimulationRunning) return;
         if (cal == null) return;
 
-        for (int i = 0; i < TeleportConfig.teleportPoints.Length && i < 9; i++)
+        if (Input.GetKeyDown(KeyCode.J))
+        {
+
+            ResetSimulatinManager();
+            cal.FlushRemainingBuffer();
+
+            Debug.Log($"fileName:{fileName} 書き込み終了");
+
+            teleport.SetCurrentStage(0);
+
+            cal.TeleportVehicleTo(TeleportConfig.teleportPoints[0]);
+        }
+
+        for (int i = 0; i < TeleportConfig.teleportPoints.Length && i < 11; i++)
         {
             KeyCode alpha = KeyCode.Alpha1 + i;
             KeyCode keypad = KeyCode.Keypad1 + i;
 
             if (Input.GetKeyDown(alpha) || Input.GetKeyDown(keypad))
             {
-                cal.TeleportVehicleTo(TeleportConfig.teleportPoints[i]);
+                ResetSimulatinManager();
+                cal.FlushRemainingBuffer();
+
+                Debug.Log($"fileName:{fileName} 書き込み終了");
+
+                teleport.SetCurrentStage(i+1);
+
+                cal.TeleportVehicleTo(TeleportConfig.teleportPoints[i+1]);
                 break;
             }
         }
