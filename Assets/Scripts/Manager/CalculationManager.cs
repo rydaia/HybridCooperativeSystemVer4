@@ -77,13 +77,13 @@ public class CalculationManager : MonoBehaviour
         public float x2, y2; // 目標点の座標
         public float phi1, phi2; // 目標点の姿勢角
         public float theta1, theta2, theta3; // 目標点の姿勢角
-        public float thetaT1, thetaT2, thetaP2d; // 目標点の姿勢角
+        public float thetaT1, thetaT2, thetaP2d, thetaP2; // 目標点の姿勢角
 
         public float u1, u2, u3, u4; // 第一車両 前進速度
 
         public float w1, w2, w3; // 第一車両 前進速度
 
-        public float d1; 
+        public float d1, d2; 
 
         public int u1Index, u2Index;
         public float u1Float, u2Float;
@@ -99,6 +99,9 @@ public class CalculationManager : MonoBehaviour
         // public float d2rx2du22, d2ry2du22;
         // public float d3rx2du23, d3ry2du23;
         // public float d4rx2du24, d4ry2du24;
+
+        public float steerInput;
+
     }
 
     void Awake()
@@ -312,6 +315,9 @@ public class CalculationManager : MonoBehaviour
             data.thetaT2 = pathKinematics.GetThetaT2();
             data.thetaP2d = pathKinematics.GetThetaP2d();
 
+            data.thetaP2 = vehicleKinematics.GetThetaP2();
+
+
             data.x2 = vehicleRobotState.GetX2();
             data.y2 = vehicleRobotState.GetY2();
 
@@ -348,6 +354,11 @@ public class CalculationManager : MonoBehaviour
             data.d4ry1du14 = bsplineGeometry.GetD4Ry1du14();
 
             data.d1 = vehicleKinematics.GetD1();
+
+            data.d2 = vehicleKinematics.GetD2();
+
+            data.steerInput = targetPointCtrl.GetSteerInput();
+
 
             // data.d1rx2du21 = bsplineGeometry.GetD1Rx2du21();
             // data.d1ry2du21 = bsplineGeometry.GetD1Ry2du21();
@@ -399,7 +410,7 @@ public class CalculationManager : MonoBehaviour
             "{24:F6},{25:F6}," +
             "{26:F6},{27:F6}," +
             "{28:F6},{29:F6}," + 
-            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6},{38:F6},{39:F6},{40:F6},{41:F6},{42:F6},{43:F6},{44:F6}\n",
+            "{30:F6},{31:F6},{32:F6},{33:F6},{34:F6},{35:F6},{36:F6},{37:F6},{38:F6},{39:F6},{40:F6},{41:F6},{42:F6},{43:F6},{44:F6},{45:F6},{46:F6},{47:F6},{48:F6}\n",
             d.time,
             d.s,
             d.x, d.y,
@@ -419,9 +430,10 @@ public class CalculationManager : MonoBehaviour
             d.d4rx1du14, d.d4ry1du14,
             d.rx2, d.ry2,
             d.cs1, d.cs2,
-            d.thetaT1, d.thetaT2, d.thetaP2d,
-            d.d1, 
-            d.w1, d.w2, d.w3
+            d.thetaT1, d.thetaT2, d.thetaP2d, d.thetaP2, d.thetaP2d - d.thetaP2,
+            d.d1, d.d2,
+            d.w1, d.w2, d.w3,
+            d.steerInput
         );
     }
 

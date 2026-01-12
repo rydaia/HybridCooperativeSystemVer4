@@ -10,6 +10,8 @@ public class SimulationManager : MonoBehaviour {
     [Header("シミュレーション制御")]
     public bool isSimulationRunning = false;  // シミュレーション実行状態
     public int currentStep;
+
+    public int simulationCount;
     public int totalSteps;
     public float tMax;
 
@@ -30,52 +32,21 @@ public class SimulationManager : MonoBehaviour {
 
     private int i;//debugループカウンタ
 
+    string fileName;
+
     void Start() {
 
 
         InitializeSimulatinManager();
 
 
-
-        // 出力ファイル設定
-        string time = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-        string fileName = $"simulation_output_{time}.csv";
-        output = new StreamWriter(@fileName, false, Encoding.GetEncoding("Shift_JIS"));
-
-        string[] header = {
-            "time",
-            "s",
-            "Tp.x", "Tp.y", 
-            "theta",
-            "Tp.v1", "Tp.v2",
-            "vehicle.x1", "vehicle.y1", 
-            "vehicle.phi1", "vehicle.theta1", 
-            "vehicle.phi2", "vehicle.theta2", "vehicle.theta3",
-            "vehicle.x2", "vehicle.y2", 
-            "vehicle.u1", "vehicle.u2", "vehicle.u3", "vehicle.u4",
-            "u1Index", "u2Index",
-            "u1Float", "u2Float",
-            "rx1", "ry1",
-            "d1rx1du11", "d1ry1du11",
-            "d2rx1du12", "d2ry1du12",
-            "d3rx1du13", "d3ry1du13",
-            "d4rx1du14", "d4ry1du14",
-            "rx2", "ry2",
-            "cs1", "cs2",
-            "thetaT1", "thetaT2", "thetaP2d",
-            "d1", 
-            "vehicle.w1", "vehicle.w2", "vehicle.w3"
-        };
-
-        string line1 = string.Join(",", header);
-
-        output.WriteLine(line1);
     }
 
     void InitializeSimulatinManager()
     {
 
         totalSteps = 100001;
+        simulationCount = 0;
         tMax = 500.0f;
 
         currentStep = 0;
@@ -185,6 +156,44 @@ public class SimulationManager : MonoBehaviour {
         //  一番最初のシミュレーション開始
         if (!isInitialSimulationRunning)
         {
+            
+            simulationCount ++;
+
+            // 出力ファイル設定
+            string time = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            fileName = $"simulation_output_{simulationCount}_{time}.csv";
+            output = new StreamWriter(@fileName, false, Encoding.GetEncoding("Shift_JIS"));
+
+            string[] header = {
+                "time",
+                "s",
+                "Tp.x", "Tp.y", 
+                "theta",
+                "Tp.v1", "Tp.v2",
+                "vehicle.x1", "vehicle.y1", 
+                "vehicle.phi1", "vehicle.theta1", 
+                "vehicle.phi2", "vehicle.theta2", "vehicle.theta3",
+                "vehicle.x2", "vehicle.y2", 
+                "vehicle.u1", "vehicle.u2", "vehicle.u3", "vehicle.u4",
+                "u1Index", "u2Index",
+                "u1Float", "u2Float",
+                "rx1", "ry1",
+                "d1rx1du11", "d1ry1du11",
+                "d2rx1du12", "d2ry1du12",
+                "d3rx1du13", "d3ry1du13",
+                "d4rx1du14", "d4ry1du14",
+                "rx2", "ry2",
+                "cs1", "cs2",
+                "thetaT1", "thetaT2", "thetaP2d", "thetaP2", "thetaP2d - thetaP2",
+                "d1", "d2", 
+                "vehicle.w1", "vehicle.w2", "vehicle.w3", "steerInput"
+            };
+
+            string line1 = string.Join(",", header);
+
+            output.WriteLine(line1);
+            Debug.Log($"fileName:{fileName} 書き込み開始");
+
             isInitialSimulationRunning = true;
             isPaused = false;
             isSimulationRunning = true;
@@ -240,7 +249,16 @@ public class SimulationManager : MonoBehaviour {
         Debug.Log("シミュレーションリセット中...");
 
         ResetSimulatinManager();
-        cal.ResetCalculateManager();
+
+
+
+        if (cal != null)
+        {
+            cal.ResetCalculateManager();
+            cal.FlushRemainingBuffer();
+
+            Debug.Log($"fileName:{fileName} 書き込み終了");
+        }
 
         Debug.Log("シミュレーションリセット完了");
 
@@ -288,6 +306,9 @@ public class SimulationManager : MonoBehaviour {
         if (this == null) return;
         if (cal == null) return;
 
+        // time
+        float time = cal.vehicleRobotState.GetTime();  
+
         // m/s
         float v1_ms = cal.vehicleRobotState.GetU1();          // 車両速度
         float u1_ms = cal.targetPointState.GetV1();           // 目標点 前進速度
@@ -307,6 +328,12 @@ public class SimulationManager : MonoBehaviour {
 
 
         GUILayout.BeginArea(new Rect(10, 10, 260, 260));
+
+        GUILayout.Label($"current step: {currentStep}", GUI.skin.box);
+
+        GUILayout.Label($"sim count: {simulationCount}", GUI.skin.box);
+
+        GUILayout.Label($"time state: {time}", GUI.skin.box);
 
         GUILayout.Label($"TargetPoint Mode: {mode}", GUI.skin.box);
 

@@ -46,6 +46,8 @@ public class TargetPointCtrl : MonoBehaviour
     private bool InputV2Flag;
     private TargetPointMode nextDriveMode;
 
+    private float steerInput;
+
     void OnEnable()
     {
         g923Steer1.action?.Enable();
@@ -344,6 +346,8 @@ public class TargetPointCtrl : MonoBehaviour
     {
         float steer = g923Steer1.action.ReadValue<float>(); // -1 ～ +1
 
+        SetSteerInput(steer);
+
         float kappaMax = 0.3f; // [1/m] 最大曲率（要調整）
         float kappa = steer * kappaMax;
 
@@ -533,7 +537,8 @@ public class TargetPointCtrl : MonoBehaviour
         calc.targetPointState.SetV2(_v2);
     }
 
-
+    public void SetSteerInput(float v) { steerInput = v; }
+    public float GetSteerInput() => steerInput;
     public float GetMaxSpeed() => maxV1;
     public bool GetInPutV2Flag() => InputV2Flag;
 

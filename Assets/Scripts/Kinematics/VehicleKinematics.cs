@@ -69,7 +69,7 @@ public class VehicleKinematics : MonoBehaviour
     public float _d2c2ds22;
     public float _squaredD1c1ds11;
 
-    public float _d1;
+    public float _d1, _d2;
 
     public float dMax;
 
@@ -419,6 +419,8 @@ public class VehicleKinematics : MonoBehaviour
             Debug.LogError($"誤差d2が{dMax}を超えました. :{_d2}");
             sim.StopSimulation();
         }
+
+        SetD2(_d2);
     }
 
     // 先頭車両追従に関与
@@ -976,6 +978,9 @@ public class VehicleKinematics : MonoBehaviour
     }
 
     public void SetD1(float v) { _d1 = v; }
+
+    public void SetD2(float v) { _d2 = v; }
+
     public void SetThetaP1(float v) { thetaP1 = v; }
     public void SetThetaP2(float v) { thetaP2 = v; }
     public void SetThetaP3(float v) { thetaP3 = v; }
@@ -992,6 +997,12 @@ public class VehicleKinematics : MonoBehaviour
 
 
     public float GetD1() => _d1;
+
+    public float GetD2() => _d2;
+
+    public float GetThetaP2() => thetaP2;
+
+
 }
 
 
