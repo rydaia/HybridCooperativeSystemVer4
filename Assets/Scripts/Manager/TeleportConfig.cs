@@ -1,3 +1,6 @@
+// Scripts/Manager/TeleportConfig.cs
+// 各ステージの初期位置と姿勢を定義し，シミュレーション開始時のテレポート位置を管理するクラス
+
 using UnityEngine;
 
 public struct TeleportPoint // ステージごとの移動場所

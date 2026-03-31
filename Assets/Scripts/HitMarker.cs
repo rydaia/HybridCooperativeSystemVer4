@@ -1,3 +1,6 @@
+// Scripts/HitMarkerRoot.cs
+// 車両と障害物の衝突を検知し，接触位置にマーカーを生成するとともにシミュレーション停止を制御するクラス
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -44,27 +47,7 @@ public sealed class HitMarkerRoot : MonoBehaviour
 
 
 
-    // internal void Enter(Collider self, Collider other)
-    // {
-    //     if (!dotPrefab) return;
-    //     if (((1 << other.gameObject.layer) & obstacleMask.value) == 0) return;
 
-    //     // 「この部位Collider × この障害物Collider」は接触中か？（離れるまで1回）
-    //     ulong key = PairKey(self.GetInstanceID(), other.GetInstanceID());
-    //     if (!touching.Add(key)) return;
-
-    //     // 自分表面：相手の中心に一番近い点
-    //     Vector3 pCar = self.ClosestPoint(other.bounds.center);
-    //     // 相手表面：自分の中心に一番近い点
-    //     Vector3 pObs = other.ClosestPoint(self.bounds.center);
-
-    //     // 車にくっつく点（部位に追従）
-    //     Spawn(dotPrefab, PushOut(pCar, pCar - pObs), self.transform);
-
-    //     // 障害物側の点（ワールド固定：parent=null）
-    //     Spawn(dotPrefab, PushOut(pObs, pObs - pCar), null);
-
-    // }
 
     internal void Exit(Collider self, Collider other)
     {

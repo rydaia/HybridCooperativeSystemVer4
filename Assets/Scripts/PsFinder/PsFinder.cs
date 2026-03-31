@@ -1,3 +1,6 @@
+// Scripts/PsFinder/PsFinder.cs
+// Bスプライン上から車両位置と幾何条件を満たす参照点 Ps1・Ps2 を探索し，制御に必要なパラメータ u1・u2 を算出するクラス
+
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -43,7 +46,6 @@ public class PsFinder
     private int Ns;
 
     private float epsilon = 0.001f; // Ps探索における内積の判定
-
 
     public PsFinder(
         VehicleRobotState robot, 
@@ -122,7 +124,6 @@ public class PsFinder
                 }
                 else
                 {
-                    // localU1Index = FindPs1PointLocally_Job(100);
                     localU1Index = FindPs1PointGlobally_Job();
                 }
             }
@@ -148,8 +149,6 @@ public class PsFinder
 
             u1 = bsplineGeometry.CalculateU(globalU1Index);
 
-            // Debug.Log($"localU1Index:{localU1Index}, globalU1Index:{globalU1Index}");
-
             // ここでrx1, ry1をセット
             bsplineGeometry.SetRx1(bsplineGeometry.frontPoints[localU1Index].x);
             bsplineGeometry.SetRy1(bsplineGeometry.frontPoints[localU1Index].y);
@@ -165,7 +164,6 @@ public class PsFinder
                 else
                 {
                     localU2Index = FindPs2PointGlobally_Job();
-                    // localU2Index = FindPs2PointLocally_Job(200);
                 }
             }
 
@@ -193,8 +191,6 @@ public class PsFinder
             // R(u2)
             bsplineGeometry.SetRx2(bsplineGeometry.rearPoints[localU2Index].x);
             bsplineGeometry.SetRy2(bsplineGeometry.rearPoints[localU2Index].y);
-            // Debug.Log($"u1Index:{u1Index}, u2Index:{u2Index}, prevPs1Index:{prevPs1Index}, prevPs2Index:{prevPs2Index}");
-
         }
     }
 
@@ -206,20 +202,6 @@ public class PsFinder
         bsplineGeometry.CopyRearBspline(rearBspline);
         bsplineGeometry.CopyRearDerivative1(dRearBspline);
     }
-
-
-
-    // public void RebuildCache() // 経路が変わる時だけ呼ぶ
-    // {
-    //     if (!frontBspline.IsCreated) return;
-    //     if (!rearBspline.IsCreated) return;
-
-    //     frontBspline = bsplineGeometry.GetFrontBsplineNative();
-    //     rearBspline = bsplineGeometry.GetRearBsplineNative();
-
-    //     dFrontBspline = bsplineGeometry.GetFrontDerivative1Native();
-    //     dRearBspline = bsplineGeometry.GetRearDerivative1Native();
-    // }
 
     public void Dispose()
     {
@@ -236,21 +218,7 @@ public class PsFinder
     // 全域探索
     public int FindPs1PointGlobally_Job()
     {
-        // Debug.Log($"N:{N}");
-        // Debug.Log($"epsilon:{epsilon}");
-
-
         if (N <= 1) return 0;
-
-        // Debug.Log($"R[0].x, R[0].y:{frontBspline[0].x}, {frontBspline[0].y}");
-        // Debug.Log($"R[1].x, R[1].y:{frontBspline[1].x}, {frontBspline[1].y}");
-        // Debug.Log($"R[2].x, R[2].y:{frontBspline[2].x}, {frontBspline[2].y}");
-
-        // Debug.Log($"dR[0].x, dR[0].y:{dFrontBspline[0].x}, {dFrontBspline[0].y}");
-        // Debug.Log($"dR[1].x, dR[1].y:{dFrontBspline[1].x}, {dFrontBspline[1].y}");
-        // Debug.Log($"dR[2].x, dR[2].y:{dFrontBspline[2].x}, {dFrontBspline[2].y}");
-
-        // Debug.Log($"vehicleRobotState.GetX1(), vehicleRobotState.GetY1():{vehicleRobotState.GetX1()}, {vehicleRobotState.GetY1()}");
 
         // ここでIJobParallelForの呼び出し 各ループを並列に処理する
         var job = new Ps1EvalJob
@@ -269,20 +237,11 @@ public class PsFinder
         JobHandle h = job.Schedule(Ns, 128);
         h.Complete();
 
-
-        // Debug.Log($"scoreArray[0],scoreArray[5000]:{scoreArray[0]}, {scoreArray[5000]}");
-
-
         // 単スレ reduction
         float best = float.PositiveInfinity;
         int bestIdx = prevLocalPs1Index;
         for (int i = 0; i < Ns; i++)
         {
-            // Debug.Log($"i:{i}, scoreArray[i]:{scoreArray[i]}");
-            // Debug.Log($"best:{best}, bestIdx:{bestIdx}");
-            // Debug.Log($"i:{i}, R[i].x, R[i].y:{frontBspline[i].x}, {frontBspline[i].y}");
-
-
             float s = scoreArray[i];
             if (s < best) { best = s; bestIdx = i; }
         }
@@ -349,9 +308,6 @@ public class PsFinder
         float L2abs = math.abs(vehicleParams.GetL2());
         float r2 = L2abs * L2abs;
 
-        // Debug.Log($"_ps1:{_ps1}");
-        // Debug.Log($"L2:{vehicleParams.GetL2()}");
-
         int start = Ns-1; // ここから後ろ（小さいq）へ走査していく
         int end   = 0;
 
@@ -383,7 +339,6 @@ public class PsFinder
         }
 
         isInitialSeachedPs2 = true;
-        // Debug.Log($"global ps2 seach bestId:{bestIdx}");
 
         return bestIdx;
     }

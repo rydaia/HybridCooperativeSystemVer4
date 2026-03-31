@@ -1,3 +1,6 @@
+// Scripts/VehicleRobotDynamics/VehicleRobotDynamics.cs
+// 車両型ロボットの運動方程式（位置・姿勢・ステア角の時間変化）を定義するクラス
+
 using UnityEngine;
 
 // pure class

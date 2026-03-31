@@ -1,3 +1,5 @@
+// Scripts/Manager/SimulationManager.cs
+// シミュレーションの開始・停止・リセット・入力操作・結果出力を管理し，全体の実行制御とユーザインターフェースを担うクラス
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -20,7 +22,7 @@ public class SimulationManager : MonoBehaviour {
     public StreamWriter output;
     // public string outputFileName = "simulation_output.csv";
     public bool isPaused = false;
-    public bool isInitialSimulationRunning = false;
+    public bool isInitialSimulationRunning;
     public bool enableOutputSimulationData = true;
 
     public bool enableGUIDetailMode = true;
@@ -42,7 +44,6 @@ public class SimulationManager : MonoBehaviour {
     string fileName;
 
     void Start() {
-
 
         InitializeSimulatinManager();
 
@@ -184,6 +185,8 @@ public class SimulationManager : MonoBehaviour {
 
     public void StartSimulation()
     {
+
+                    Debug.Log(" StartSimulation()");
         //  一番最初のシミュレーション開始
         if (!isInitialSimulationRunning)
         {
@@ -193,7 +196,10 @@ public class SimulationManager : MonoBehaviour {
             // 出力ファイル設定
             string time = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             fileName = $"simulation_output_{simulationCount}_{time}.csv";
-            output = new StreamWriter(@fileName, false, Encoding.GetEncoding("Shift_JIS"));
+            // output = new StreamWriter(@fileName, false, Encoding.GetEncoding("Shift_JIS"));
+
+output = new StreamWriter(fileName, false, new UTF8Encoding(false));
+
 
             string[] header = {
                 "time",
@@ -326,14 +332,6 @@ public class SimulationManager : MonoBehaviour {
         }
     }
     
-    private void RunSimulation()
-    {
-        // ここに実際のシミュレーション処理を実装
-        // 例：車両の移動、ベジエ曲線に沿った移動など
-        
-        // デバッグ用（実際の処理に置き換えてください）
-    }
-
     private string F(float v) => v.ToString("F6", CultureInfo.InvariantCulture);
 
     void OnGUI()
@@ -363,26 +361,21 @@ public class SimulationManager : MonoBehaviour {
         float phi1_deg = cal.vehicleRobotState.GetPhi1() * Mathf.Rad2Deg;
 
 
-        GUILayout.BeginArea(new Rect(10, 10, 260, 260));
-
-        // GUILayout.Label($"current step: {currentStep}", GUI.skin.box);
-
-        GUILayout.Label($"sim count: {simulationCount}", GUI.skin.box);
-
-        GUILayout.Label($"time: {time}", GUI.skin.box);
-
-        GUILayout.Label($"TargetPoint Mode: {mode}", GUI.skin.box);
-
-        GUILayout.Label($"Vehicle Speed: {u1_kmh:F6} km/h", GUI.skin.box);
-
-        GUILayout.Label($"stage: {teleport.GetCurrentStage().stageName}", GUI.skin.box);
-
-
-
-        // GUILayout.Label($"time1 TP state: {time1}", GUI.skin.box);
+        GUILayout.BeginArea(new Rect(0, 210, 260, 260));
 
         if(enableGUIDetailMode)
         {
+            
+            GUILayout.Label($"sim count: {simulationCount}", GUI.skin.box);
+
+            GUILayout.Label($"time: {time}", GUI.skin.box);
+
+            GUILayout.Label($"TargetPoint Mode: {mode}", GUI.skin.box);
+
+            GUILayout.Label($"Vehicle Speed: {u1_kmh:F6} km/h", GUI.skin.box);
+
+            GUILayout.Label($"stage: {teleport.GetCurrentStage().stageName}", GUI.skin.box);
+
             GUILayout.Label($"TargetPoint v1: {v1_ms:F6} m/s", GUI.skin.box);
 
             GUILayout.Label($"TargetPoint v1: {v1_kmh:F6} km/h", GUI.skin.box);
@@ -397,19 +390,6 @@ public class SimulationManager : MonoBehaviour {
         }
 
         GUILayout.EndArea();
-
-        // ステージ移動候補表示
-        if (isPaused && !isSimulationRunning)
-        {
-            GUILayout.BeginArea(new Rect(10, 280, 320, 200));
-            GUILayout.Label("Teleport (paused only)");
-            for (int i = 0; i < TeleportConfig.teleportPoints.Length; i++)
-            {
-                var p = TeleportConfig.teleportPoints[i];
-                GUILayout.Label($"{i + 1}: {p.stageName} (x={p.x}, y={p.y}, theta={p.theta})");
-            }
-            GUILayout.EndArea();
-        }
     }
 
     // ステージ移動の入力受付

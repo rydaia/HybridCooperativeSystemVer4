@@ -1,3 +1,6 @@
+// Scripts/Kinematics/VehicleKinematics.cs
+// 経路誤差や姿勢差に基づく状態フィードバック制御により，車両型移動ロボットの制御入力を計算するクラス
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -77,10 +80,6 @@ public class VehicleKinematics : MonoBehaviour
 
     public float _phi1;
     public float _phi2;
-
-    // public float thetaP1;
-    // public float thetaP2;
-    // public float thetaP3;
     public float _thetaP2d;
 
     public float L1f1h2;
@@ -150,22 +149,6 @@ public class VehicleKinematics : MonoBehaviour
     public float _formulaOfFormulaOf1MinusCs1MulD1MulFormulaOfSecThetaP1;
     public float _formulaOfCubedSecThetaP2MinusThetaP3MulSinThetaP1MinusThetaP3;
 
-    // public VehicleKinematics(
-    //     TargetPointState TPstate,
-    //     VehicleRobotState robot, 
-    //     VehicleParameters vehicleParams, 
-    //     BsplineGeometry geo, 
-    //     PathKinematics path
-    // )
-    // {
-
-    //     this.targetPointState = TPstate;
-    //     this.vehicleRobotState = robot;
-    //     this.vehicleRobotParms = vehicleParams;
-    //     this.bsplineGeometry = geo;
-    //     this.pathKinematics = path;    
-    // }
-
     public void Initialize(
         SimulationManager sim,
         TargetPointState TPstate,
@@ -215,16 +198,10 @@ public class VehicleKinematics : MonoBehaviour
 
             ComputeControlInputsWForVariable();
 
-            // Debug.Log($"w1:{w1}, w2:{w2}, w3:{w3}");
-
             ComputeControlInputsU();
-
-            // Debug.Log($"u1:{u1}, u2:{u2}, u3:{u3}");
 
         }
 
-
-        // Debug.Log($"u1:{u1}, u2:{u2}, u3:{u3}, u4:{u4}");
     }
 
     public void ComputeUtilitiesForControlInput()
@@ -250,9 +227,6 @@ public class VehicleKinematics : MonoBehaviour
 
         CalculateD1();// 先頭車両追従に関与
         CalculateD2();// 先頭車両追従に関与
-
-
-        // Debug.Log($"_phi1:{_phi1}, _phi2:{_phi2}, thetaP1:{thetaP1}, thetaP2:{thetaP2}, thetaP3:{thetaP3}, _d1:{_d1}");
 
         // Power(c(s1(t)),2):
         _squaredCs1 = Mathf.Pow(_cs1, 2);// 先頭車両追従に関与
@@ -370,23 +344,6 @@ public class VehicleKinematics : MonoBehaviour
             Debug.LogError($"誤差d1が{dMax}を超えました. :{_d1}");
             sim.StopSimulation();
         }
-
-
-        // ここから制御
-        // float d0 = 0.005f;
-
-        // if(_d1 > d0)
-        // {
-
-        //     float dr = _d1;
-        //     SetD1(dr);
-        // }
-        // else
-        // {
-        //     float dr = 0.0f;
-        //     SetD1(dr);
-        // }
-        // 第一操作点からベジェ曲線へ下ろした時に垂直となる接戦の角度
     }
 
     public void CalculateD2()
@@ -915,7 +872,6 @@ public class VehicleKinematics : MonoBehaviour
     public void ComputeControlInputsWForVariable()
     {
         //　制御入力　w１
-        // Debug.Log($"_d1thetaP2dds11:{_d1thetaP2dds11}, _d2thetaP2dds12:{_d2thetaP2dds12}, _d3thetaP2dds13:{_d3thetaP2dds13}");
 
         w1 = CalculateW1();
 
@@ -924,13 +880,6 @@ public class VehicleKinematics : MonoBehaviour
         z31 = L2f1h3;
 
         w3 = p31*Mathf.Abs(w1)*z31 + p32*w1*z32 + p33*Mathf.Abs(w1)*z33;
-        // w3 = targetPointState.getV2();
-
-        // float maxW3 = 1.0f;
-        // float minW3 = -1.0f;
-        
-        // w3 = Mathf.Clamp(w3, minW3, maxW3);
-
 
         float _d1thetaP2dds11 = pathKinematics.GetD1thetaP2dds11();
         float _d2thetaP2dds12 = pathKinematics.GetD2thetaP2dds12();
@@ -945,8 +894,7 @@ public class VehicleKinematics : MonoBehaviour
         z22 = L1f1h2;
         z21 = L2f1h2;
 
-        // 
-        _thetaP2_1 = Mathf.Sign(w1) * z22;
+        _thetaP2_1 = Mathf.Sign(w1) * z22;  
         _thetaP2_2 = z21;
         _thetaP2_3 = (_thetaP2d_3 + k1*(_thetaP2d_2 - _thetaP2_2) + k2*(_thetaP2d_2 + k1*(_thetaP2d_1 - _thetaP2_1) - _thetaP2_2)) +
                 k3*(_thetaP2d_2 + k1*(_thetaP2d_1 - _thetaP2_1) + k2*(_thetaP2d_1 + k1*(_thetaP2d - thetaP2) - _thetaP2_1) - _thetaP2_2);
@@ -971,10 +919,6 @@ public class VehicleKinematics : MonoBehaviour
 
         u3 = tildaU2; 
         u4 = _cosThetaP1MinusThetaP2 / _cosThetaP2MinusThetaP3 * u1 ;
-
-        // Debug.Log($"w1:{w1}, w2:{w2}, w3:{w3}, u1:{u1}, u2:{u2}, u3:{u3}");
-        // Debug.Log($"tildaU1:{tildaU1}, tildaU3:{tildaU3}, tildaU2:{tildaU2}");
-
     }
 
     public void SetD1(float v) { _d1 = v; }

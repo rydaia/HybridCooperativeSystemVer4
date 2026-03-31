@@ -1,3 +1,6 @@
+// Scripts/Bspine/Job/ControlPointSmootherJob.cs
+// 制御点列に対して移動平均を適用し，平滑化処理を並列に行うJob
+
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;

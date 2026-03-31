@@ -1,3 +1,6 @@
+// Scripts/Renderer/ConnectionPointRenderer.cs
+// 車両状態に基づいて連結点の位置と姿勢を更新し，シミュレーション中の連結構造を可視化するクラス
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -41,18 +44,6 @@ public class ConnectionRenderer : MonoBehaviour
     // 初期配置
     void InitialPositions()
     {
-        // float theta = calc.vehicleRobotState.getTheta();
-        // float x = calc.vehicleRobotState.getX();
-        // float y = calc.vehicleRobotState.getY();
-
-        // float targetPointDeg  = -theta * Mathf.Rad2Deg;
-
-        // targetPointRotation  = Quaternion.Euler(0f, targetPointDeg, 0f);
-
-        // targetPointPosition  = new Vector3(x, 0.5f, y)*scale;;
-        // // 反映
-        // TargetPoint.SetPositionAndRotation(targetPointPosition, targetPointRotation);
-
         ComputePositionAndRotation();
         UpdatePositions();
     }
@@ -61,13 +52,8 @@ public class ConnectionRenderer : MonoBehaviour
     void FixedUpdate() 
     {
         if (sim == null) return;
-        // if (sim.isSimulationRunning)
-        // {
-        //     ComputePositionAndRotation();
-        // }
 
-            ComputePositionAndRotation();
-
+        ComputePositionAndRotation();
     }
 
     void Update()
@@ -106,19 +92,6 @@ public class ConnectionRenderer : MonoBehaviour
     }
     // Update is called once per frame
     void LateUpdate() {
-        // if (sim.isSimulationRunning)
-        // {
-        //     UpdatePositions();
-        // }
-
         UpdatePositions();
-
     }
-
-    // public float GetCurrentTargetPointSpeed() { 
-    //     return targetPointSpeed; 
-    // }
-    // public Vector3 GetCurrentPosition() { 
-    //     return targetPointPosition;
-    // }
 }

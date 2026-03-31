@@ -1,3 +1,6 @@
+// Scripts/Bspine/TrajectoryGenerator.cs
+// 過去軌跡の更新・平滑化・再サンプリング・Bスプライン近似を統合し，リアルタイムに経路を生成するクラス
+
 using UnityEngine;
 using Unity.Profiling;
 using Unity.Mathematics;
@@ -6,16 +9,6 @@ using Unity.Jobs;
 using Unity.Burst;    
 using System.Collections.Generic;
 
-// 目標点の現在座標を取得
-
-// 制御点の生成
-// 過去の軌跡の点集合と現時点のu1(前身速度), u2(ステアリング速度)による未来の予測軌道の点集合からなる制御点
-// それらの制御点の集合をスムージングにより滑らかにする
-// 最終的な制御点集合からB-Spline補完、曲線の生成
-
-//　制御点の集合はキュー(FIFD)による実装 1からNまで
-// 未来の予測軌道の点集合はどう決まる？
-// pure class
 public class TrajectoryGenerator
 {
 
@@ -94,18 +87,15 @@ public class TrajectoryGenerator
         // 再サンプリングした際のサイズ
         Nre = calc.cpResample.GetN();
 
-
         // 近似後のサイズ
         N = Mathf.FloorToInt(smax_past / ds) + 1;
         // スムージング済みデータのサイズ
         Nsm = calc.cpSmooth.GetNsm();
 
-        // mergedNative = new NativeArray<float2>(Np + Nf, Allocator.Persistent);
         pastNative = new NativeArray<float2>(Np, Allocator.Persistent);
         controlPointsNative = new NativeArray<float2>(Np, Allocator.Persistent);
         smoothedNative = new NativeArray<float2>(Nsm, Allocator.Persistent);
         resampledNative = new NativeArray<float2>(Nre, Allocator.Persistent);
-        // bsplineNative = new NativeArray<float2>(N, Allocator.Persistent);
 
         Debug.Log($"過去データの総数:{Np}");
         Debug.Log($"smax_past:{smax_past}");

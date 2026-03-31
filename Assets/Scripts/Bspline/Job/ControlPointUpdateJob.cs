@@ -1,3 +1,7 @@
+// Scripts/Bspine/Job/ControlPointUpdateJob.cs
+// FutureJob：現在位置と曲率に基づき，将来の経路点（制御点）を並列生成するJob
+// MergeJob：過去の制御点列と将来生成した制御点列を結合するJob
+
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;

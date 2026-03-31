@@ -1,3 +1,6 @@
+// Scripts/OutputCSV.cs
+// 経路生成過程の各点列データをCSV形式で出力し，デバッグや解析に利用できるよう保存するクラス
+
 using Unity.Mathematics;
 using UnityEngine;
 using System.IO;
@@ -69,17 +72,6 @@ public static class OutputCSV
                 float dFB       = DistSafe(frontBspline, i);
 
                 float u = arrayU[i];
-
-        //         float _squaredD1rx1du11 = Mathf.Pow(pFD.x,2);
-        //         float _squaredD1ry1du11 = Mathf.Pow(pFD.y,2);
-
-        //         float _formulaOfD1ry1du11MulD2rx1du12 = pFD.y*pDerivative2.x;
-        //         float _formulaOfD1rx1du11MulD2ry1du12 = pDerivative1.x*pDerivative2.y;
-
-        //         float _formulaOfSquaredD1rx1du11PlusSquaredD1ry1du11 = _squaredD1rx1du11 + _squaredD1ry1du11;
-
-        //         float frontCs1 =  -((_squaredD1ry1du11*(_formulaOfD1ry1du11MulD2rx1du12 - _formulaOfD1rx1du11MulD2ry1du12)) / Mathf.Pow(_formulaOfSquaredD1rx1du11PlusSquaredD1ry1du11, 2.5f))
-        // + (_squaredD1rx1du11*(-(_formulaOfD1ry1du11MulD2rx1du12) + _formulaOfD1rx1du11MulD2ry1du12)) / Mathf.Pow(_formulaOfSquaredD1rx1du11PlusSquaredD1ry1du11, 2.5f);
 
                 writer.WriteLine(
                     $"{F(s)}," +

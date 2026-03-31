@@ -1,3 +1,6 @@
+// Scripts/Bspine/BsplineGeometry.cs
+// Bスプライン曲線の位置および高階微分を計算し，経路追従制御に必要な幾何情報を生成するクラス
+
 using Unity.Mathematics;
 using UnityEngine;
 using System.IO;

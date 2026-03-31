@@ -1,3 +1,6 @@
+// Scripts/VehicleRobot/VehicleParameters.cs
+// 車両モデルの幾何パラメータ（ホイールベースや車体長）を管理するクラス
+
 [System.Serializable]
 public class VehicleParameters
 {
@@ -8,10 +11,6 @@ public class VehicleParameters
     public VehicleParameters()
     {
         float scale = 5.0f;
-
-        // L1 = 0.27f * scale;
-        // L2 = 0.81f * scale;
-        // L3 = 0.27f * scale;
 
         L1 = 3.45f;
         L2 = 10.0f;

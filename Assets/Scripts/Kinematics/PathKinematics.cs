@@ -1,3 +1,6 @@
+// Scripts/Kinematics/PathKinematics.cs
+// 車両型移動ロボットの運動学モデルに基づき，位置・姿勢を更新するクラス
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -361,25 +364,6 @@ public class PathKinematics : MonoBehaviour
         SetThetaT2(_thetaT2);
     }
 
-    // public void CalculateThetaP2d()
-    // {
-    //     float _thetaP2d = Mathf.Atan2(_ry1 - _ry2, _rx1 - _rx2) - thetaT1;
-
-    //     SetThetaP2d(_thetaP2d);
-    // }
-
-    // public void CalculateThetaP2d()
-    // {
-    //     float theta = Mathf.Atan2(_ry1 - _ry2, _rx1 - _rx2);
-    //     float diff = theta - thetaT1;
-
-    //     Debug.Log($"Atan2(theta):{theta}, diff:{diff}");
-    //     diff = NormalizeAngle(diff);
-    //     Debug.Log($"Normalize diff:{diff}");
-
-    //     SetThetaP2d(diff);
-    // }
-
     public void CalculateThetaP2d()
     {
         float theta12 = Mathf.Atan2(_ry1 - _ry2, _rx1 - _rx2);
@@ -388,8 +372,6 @@ public class PathKinematics : MonoBehaviour
         float diff    = NormalizeAngle(theta12 - theta1);
 
         SetThetaP2d(diff);
-
-        // Debug.Log($"theta12={theta12}, theta1={theta1}, diff={diff}");
     }
 
 
@@ -1112,8 +1094,6 @@ public class PathKinematics : MonoBehaviour
     {
         _sinThetaP2d = Mathf.Sin(thetaP2d);
         _cosThetaP2d = Mathf.Cos(thetaP2d);
-
-        // Debug.Log($"thetaP2d:{thetaP2d}, _sinThetaP2d:{_sinThetaP2d}, _cosThetaP2d:{_cosThetaP2d}");
 
         _formulaOfThetaP2dPlusThetaT1MinusThetaT2 = thetaP2d + thetaT1 - thetaT2;
         _secThetaP2dPlusThetaT1MinusThetaT2 = 1.0f / Mathf.Cos(_formulaOfThetaP2dPlusThetaT1MinusThetaT2);

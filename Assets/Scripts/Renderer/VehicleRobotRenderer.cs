@@ -1,3 +1,6 @@
+// Scripts/Renderer/VehicleRobotRenderer.cs
+// 車両状態に基づいて前後車両・荷台・ステア・車輪の位置と姿勢を更新し，協調搬送車両の挙動を可視化するクラス
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -124,8 +127,6 @@ public class VehicleRobotRenderer : MonoBehaviour
         wheelRadius = 0.575f; // [m]
 
         InitialPositions();
-
-        // transform.localScale = new Vector3(2f, 1f, 3f);
     }
 
     // 初期配置
@@ -145,7 +146,6 @@ public class VehicleRobotRenderer : MonoBehaviour
             ComputePositionAndRotation();
         }
     }
-
     void Update()
     {
     }
@@ -251,11 +251,4 @@ public class VehicleRobotRenderer : MonoBehaviour
             UpdatePositions();
         }
     }
-
-    // public float GetCurrentTargetPointSpeed() { 
-    //     return targetPointSpeed; 
-    // }
-    // public Vector3 GetCurrentPosition() { 
-    //     return targetPointPosition;
-    // }
 }

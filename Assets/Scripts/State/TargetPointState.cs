@@ -1,3 +1,5 @@
+// Scripts/State/TargetPointState.cs
+// 目標点（Target Point）の状態（位置・姿勢・速度）を管理し，Runge-Kutta法による更新や前進/後退に応じた目標点切替を行うクラス
 
 using System;
 using UnityEngine;
@@ -328,9 +330,6 @@ public class TargetPointState
     // Tp2 → Tp1
     public void ChanegeTagetPointToTp1()
     {
-
-        Debug.Log($"ChanegeTagetPointToTp1()");
-
         SetX(vehicle.GetMidpointBetweenFrontWheelsOfFV().x);
         SetY(vehicle.GetMidpointBetweenFrontWheelsOfFV().y);
         SetTheta(vehicle.GetTheta1());
@@ -340,20 +339,9 @@ public class TargetPointState
     // Tp1 → Tp2
     public void ChanegeTagetPointToTp2()
     {
-        Debug.Log($"ChanegeTagetPointToTp2()");
-
-        // Debug.Log($"vehicle.GetMidpointBetweenRearWheelsOfFV().x:{vehicle.GetMidpointBetweenRearWheelsOfFV().x}");
-        // Debug.Log($"vehicle.GetMidpointBetweenRearWheelsOfFV().y:{vehicle.GetMidpointBetweenRearWheelsOfFV().y}");
-
-        // Debug.Log($"vehicle.GetMidpointBetweenRearWheelsOfSV().x:{vehicle.GetMidpointBetweenRearWheelsOfSV().x}");
-        // Debug.Log($"vehicle.GetMidpointBetweenRearWheelsOfSV().y:{vehicle.GetMidpointBetweenRearWheelsOfSV().y}");
-
-
         SetX(vehicle.GetMidpointBetweenRearWheelsOfSV().x);
         SetY(vehicle.GetMidpointBetweenRearWheelsOfSV().y);
         SetTheta(vehicle.GetTheta3());
-
-        // Debug.Log($"getX():{getX()}, getY():{getY()}");
     }
 
     public void SetIsStop(bool v)

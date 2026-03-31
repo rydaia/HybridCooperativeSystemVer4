@@ -1,3 +1,6 @@
+// Scripts/Renderer/FutureCurveRenderer.cs
+// 将来の制御点列（future）をサンプリングし，LineRendererを用いて可視化するクラス
+
 using UnityEngine;
 using Unity.Mathematics;
 

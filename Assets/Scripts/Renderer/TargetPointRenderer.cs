@@ -1,3 +1,6 @@
+// Scripts/Renderer/TargetPointRenderer.cs
+// 目標点（Tp1・Tp2）の位置・姿勢を更新し，現在のモードに応じて色を変化させながら可視化するクラス
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -51,9 +54,8 @@ public class TargetPointRenderer : MonoBehaviour
     // 初期配置
     void InitialPositions()
     {
-        // ComputePositionAndRotation();
 
-                // 現在の目標点がTp1の時、
+        // 現在の目標点がTp1の時、
         // Tp1は目標点の状態で移動
         // Tp2は後方車両、後輪間中点の座標に移動
         // // 前方目標点の初期設定
@@ -112,9 +114,6 @@ public class TargetPointRenderer : MonoBehaviour
     {
         var tp = calc.targetPointState.GetCurrentTargetPoint();
 
-        // Debug.Log($"calc.targetPointState.GetCurrentTargetPoint():{calc.targetPointState.GetCurrentTargetPoint()}");
-
-
         if(tp == CurrentTargetPoint.Tp1)
         {
             // Tp1 ← state の位置
@@ -139,16 +138,12 @@ public class TargetPointRenderer : MonoBehaviour
             float y = calc.targetPointState.GetY();
             float th = calc.targetPointState.GetTheta();
 
-            // Debug.Log($"x,y:{x}, {y}");
-
             targetPointPosition2 = new Vector3(x, 0.5f, y) * scale;
             targetPointRotation2 = Quaternion.Euler(0, -th * Mathf.Rad2Deg, 0);
 
             // Tp1 ← 前方車両 front midpoint
             var front = calc.vehicleRobotState.GetMidpointBetweenFrontWheelsOfFV();
             float th1 = calc.vehicleRobotState.GetTheta1();
-
-            // Debug.Log($"front.x,front.y:{front.x}, {front.y}");
 
             targetPointPosition1 = new Vector3(front.x, 0.5f, front.y) * scale;
             targetPointRotation1 = Quaternion.Euler(0, -th1 * Mathf.Rad2Deg, 0);

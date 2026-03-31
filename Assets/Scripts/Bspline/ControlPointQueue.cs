@@ -1,3 +1,6 @@
+// Scripts/Bspine/ControlPointQueue.cs
+// 過去軌跡と将来予測軌跡を管理し，リアルタイムに制御点列を更新するキュー構造を提供するクラス
+
 using UnityEngine;
 using Unity.Profiling;
 using Unity.Collections;

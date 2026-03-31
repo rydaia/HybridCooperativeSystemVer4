@@ -1,6 +1,8 @@
+// Scripts/RungeKutta.cs
+// Runge-Kutta-Gill法により状態方程式を数値積分し，シミュレーション状態を更新するクラス
+
 using System;
 using UnityEngine;
-
 
 public class RungeKutta
 {

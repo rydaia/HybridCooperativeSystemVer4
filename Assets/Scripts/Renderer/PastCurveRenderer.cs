@@ -1,3 +1,6 @@
+// Scripts/Renderer/PastCurveRenderer.cs
+// 過去の制御点列（past）をサンプリングし，LineRendererを用いて可視化するクラス
+
 using UnityEngine;
 using Unity.Mathematics;
 

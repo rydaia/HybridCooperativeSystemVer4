@@ -1,3 +1,5 @@
+// Scripts/State/VehicleRobotState.cs
+// 車両型ロボットの状態（位置・姿勢・ステア角など）を管理し，Runge-Kutta法による状態更新や幾何計算（各車輪中点・テレポート）を行うクラス :contentReference[oaicite:0]{index=0}
 
 using System;
 using UnityEngine;

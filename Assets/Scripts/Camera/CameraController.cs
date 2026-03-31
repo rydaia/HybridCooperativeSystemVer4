@@ -1,3 +1,6 @@
+// Scripts/Camera/CameraController.cs
+// ステージごとに設定された俯瞰カメラ位置へ切り替え，表示範囲を調整するカメラ制御クラス
+
 using UnityEngine;
 
 [System.Serializable]
@@ -32,9 +35,9 @@ public static class TeleportCameraConfig
             40f
         ),
         new TeleportCameraPoint("stage2",
-            new Vector3(-290f, 50f, 100f),
+            new Vector3(-275f, 50f, 97f),
             new Vector3(90f, 90f, 0f),
-            50f
+            26.0f
         ),
 
         new TeleportCameraPoint("stage3",
@@ -98,9 +101,6 @@ public class CameraController : MonoBehaviour
 
     void Start()
     {
-        // Display2 を有効化
-        if (Display.displays.Length > 1)
-            Display.displays[1].Activate();
     }
 
     void Update()

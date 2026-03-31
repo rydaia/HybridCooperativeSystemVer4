@@ -1,3 +1,6 @@
+// Scripts/PsFinder/Job/PsFinderJob.cs
+// Bスプライン曲線上で車両位置や車両間距離の条件を満たす参照点 Ps1・Ps2 を並列探索するJob群
+
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;

@@ -1,3 +1,6 @@
+// Scripts/TargetPoint/TargetPointCtrl.cs
+// キーボードやG923入力デバイスから操作を受け取り，目標点の速度（v1）や旋回（v2）およびモード（前進・後退・停止）を制御するクラス
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -23,7 +26,7 @@ public class TargetPointCtrl : MonoBehaviour
     [SerializeField] private InputActionProperty g923Throttle; // アクセル入力
     [SerializeField] private InputActionProperty g923Brake; // ブレーキ
     [SerializeField] private InputActionProperty g923Mode; // モード切替
-    [SerializeField] private InputActionProperty g923Reset; // 全リセット
+    [SerializeField] private InputActionProperty g923Start; // 全リセット
 
 
     [Header("v1の制御")]
@@ -38,7 +41,7 @@ public class TargetPointCtrl : MonoBehaviour
 
     [Header("CalculationManager 参照")]
     public CalculationManager calc;
-
+    public SimulationManager sim;
     private float _v1, _v2;
     [SerializeField] private float minCruiseSpeed; // 最低巡航速度
     [SerializeField] private float brakeDecel;     // ブレーキ減速率
@@ -54,7 +57,7 @@ public class TargetPointCtrl : MonoBehaviour
         g923Throttle.action?.Enable();
         g923Brake.action?.Enable();
         g923Mode.action?.Enable();
-        g923Reset.action?.Enable();
+        g923Start.action?.Enable();
     }
 
     void OnDisable()
@@ -63,25 +66,18 @@ public class TargetPointCtrl : MonoBehaviour
         g923Throttle.action?.Disable();
         g923Brake.action?.Disable();
         g923Mode.action?.Disable();
-        g923Reset.action?.Disable();
+        g923Start.action?.Disable();
     }
 
     void Update()
     {
-        if (inputMode == InputMode.G923)
+        // R3
+        if (g923Start.action.WasPressedThisFrame())
         {
-            // Debug.Log(
-            //     $"Steer={g923Steer1.action.ReadValue<float>()}, " +
-            //     $"Throttle={g923Throttle.action.ReadValue<float>()}, " +
-            //     $"Brake={g923Brake.action.ReadValue<float>()}"
-            // );
+            Debug.Log("start");
+            sim.StartSimulation();
         }
     }
-
-    // void FixedUpdate()
-    // {
-    //     ReadInput();
-    // }
 
     public void Initialize()
     {
@@ -135,6 +131,8 @@ public class TargetPointCtrl : MonoBehaviour
             ChangeMode();
         }
 
+
+
         if (Input.GetKeyDown(KeyCode.P))
         {
             ChangeMode();
@@ -184,7 +182,6 @@ public class TargetPointCtrl : MonoBehaviour
         float brake    = Mathf.Abs(g923Brake.action.ReadValue<float>() - 1.0f);
 
         float dt = Time.deltaTime;
-        // float dt = 0.01f;
 
         // 現在速度を取得
         _v1 = calc.targetPointState.GetV1();
@@ -197,12 +194,10 @@ public class TargetPointCtrl : MonoBehaviour
             if (throttle > 0.01f)
             {
                 // アクセル量から「目標速度」を決める
-                // float targetSpeed = throttle * maxV1;
                 float targetSpeed = Mathf.Pow(throttle, 1.5f) * maxV1;
                 float accelRate = 5.0f; 
 
                 // アクセル量に応じて加速
-                // _v1 += throttle * driveAcceleration * dt;
                 _v1 = Mathf.MoveTowards(_v1, targetSpeed, accelRate * dt);
 
             }
@@ -232,32 +227,6 @@ public class TargetPointCtrl : MonoBehaviour
             }
 
         }
-        else if(mode == TargetPointMode.Back)
-        {
-            // // 後退処理
-            // if (Input.GetKey(KeyCode.UpArrow))
-            // {
-            //     // アクセル：加速
-            //     _v1 += driveAcceleration * 0.01f;
-            // }
-            // else if (Input.GetKey(KeyCode.DownArrow))
-            // {
-            //     // ブレーキ：減速（0未満にはしない）
-            //     _v1 -= driveAcceleration * 0.01f;
-            //     if (_v1 < 0) _v1 = 0;
-            // }
-            // else
-            // {
-            //     // 何も押してないときは自然減速
-            //     // 0.1以下の場合は0.1になるように加速
-            //     _v1 -= driveAcceleration * Time.deltaTime;
-
-            //     if (_v1 < 0.1f)
-            //     {
-            //         _v1 = 0.1f;
-            //     }
-            // }
-        }
         else
         {
             if (Input.GetKey(KeyCode.UpArrow))
@@ -267,9 +236,6 @@ public class TargetPointCtrl : MonoBehaviour
         }
 
         _v1 = Mathf.Clamp(_v1, 0f, maxV1);
-
-        // Debug.Log($"brake: {brake}, throttle:{throttle}, -v1:{_v1}");
-
 
         calc.targetPointState.SetV1(_v1);
     }
@@ -327,18 +293,6 @@ public class TargetPointCtrl : MonoBehaviour
         calc.targetPointState.SetV1(_v1);
     }
 
-    // private void HandleSteerInput_G923()
-    // {
-    //     float steer = g923Steer1.action.ReadValue<float>(); // -1 ～ +1
-
-    //     _v2 = steer * maxV2 * 1.0f;
-
-    //     InputV2Flag = Mathf.Abs(steer) > 0.01f;
-
-    //     calc.targetPointState.SetV2(Mathf.Clamp(_v2, minV2, maxV2));
-    // }
-
-
     // ハンドルの入力に応じて目標の向きを決める(目標のv2ではなく)
     // 例えばsteer が0.5だったら30degreeなど。
     // その角度で回るように
@@ -357,32 +311,6 @@ public class TargetPointCtrl : MonoBehaviour
         float v1 = calc.targetPointState.GetV1();
 
         float v2 = v1 * kappa;
-
-        // float steerAccel = 8.5f;     // ステア応答の速さ
-        // float steerReturn = 6.0f;    // 手放した時の戻り
-        // float steerDeadZone = 0.00f;
-        // float dt = 0.01f;
-
-
-
-        // float targetV2 = 0f;
-
-        // if (Mathf.Abs(steer) > steerDeadZone)
-        // {
-        //     // ハンドル入力 → 目標ステア角速度
-        //     targetV2 = steer * maxV2;
-        //     InputV2Flag = true;
-        // }
-
-        // // 現在の v2 を目標に追従させる
-        // _v2 = Mathf.MoveTowards(
-        //     _v2,
-        //     targetV2,
-        //     steerAccel * dt
-        // );
-
-        Debug.Log($"steer:{steer}, kappa:{kappa}, v2:{v2}, R:{1f / kappa}");
-
 
         calc.targetPointState.SetV2(Mathf.Clamp(v2, minV2, maxV2));
     }

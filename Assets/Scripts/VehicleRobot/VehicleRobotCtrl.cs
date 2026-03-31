@@ -1,3 +1,6 @@
+// Scripts/VehicleRobot/VehicleRobotCtrl.cs
+// キーボード入力に応じて車両ロボットの前進速度 w1 と操舵入力 w3 を制御するクラス
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;

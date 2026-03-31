@@ -1,3 +1,6 @@
+// Scripts/Bspine/ControlPointSmoother.cs
+// 制御点列に移動平均を適用し，ノイズを低減した滑らかな点列を生成するクラス
+
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;

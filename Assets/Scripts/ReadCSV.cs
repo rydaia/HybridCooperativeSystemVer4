@@ -1,3 +1,6 @@
+// Scripts/ReadCSV.cs
+// Resourcesフォルダ内のCSVファイルから速度データ（float2配列）を読み込み，制御やシミュレーションに利用するクラス
+
 using UnityEngine;
 using Unity.Mathematics;
 using System.IO;
@@ -24,22 +27,6 @@ public static class ReadCSV
         }
 
         string[] lines = csvFile.text.Split('\n');
-
-        // int count = lines.Length - 1; // 最後に空行があれば除外
-        // float2[] arr = new float2[count];
-
-        // for (int i = 0; i < count; i++)
-        // {
-        //     if (string.IsNullOrWhiteSpace(lines[i])) continue;
-
-        //     // s, x, y の3つ
-        //     string[] cols = lines[i].Split(',');
-
-        //     float x = float.Parse(cols[1], CultureInfo.InvariantCulture);
-        //     float y = float.Parse(cols[2], CultureInfo.InvariantCulture);
-
-        //     arr[i] = new float2(x, y);
-        // }
 
         int start = 1;  // 1行目はヘッダー
         int count = lines.Length - start;

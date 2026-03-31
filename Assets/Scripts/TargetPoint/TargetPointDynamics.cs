@@ -1,3 +1,6 @@
+// Scripts/TargetPoint/TargetPointDynamics.cs
+// 目標点の運動方程式（時間・弧長・位置・姿勢）を定義するクラス
+
 using UnityEngine;
 
 // pure class

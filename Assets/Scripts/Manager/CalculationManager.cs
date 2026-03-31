@@ -1,3 +1,6 @@
+// Scripts/Manager/CalculationManager.cs
+// 経路生成・幾何計算・制御・状態更新を統合し，シミュレーション全体の計算処理を管理するクラス
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -41,17 +44,12 @@ public class CalculationManager : MonoBehaviour
 
 
     [Header("debug用")]
-    // private float2[] debugMergedPoints;
     private float2[] debugResampledPoints;
-    // private float2[] debugResampledPoints2;
     private float2[] debugSmoothedPoints;
     private float2[] debugPastPoints;
-    // private float2[] debugFuturePoints;
     private float2[] debugPoints;
     public int debugNp;
-    // public int debugNf;
     public int debugNs;
-    // public int debugNd;
     public int debugN;
 
     public event Action OnInitialized;
@@ -98,11 +96,6 @@ public class CalculationManager : MonoBehaviour
         public float d2rx1du12, d2ry1du12;
         public float d3rx1du13, d3ry1du13;
         public float d4rx1du14, d4ry1du14;
-        // public float d1rx2du21, d1ry2du21;
-        // public float d2rx2du22, d2ry2du22;
-        // public float d3rx2du23, d3ry2du23;
-        // public float d4rx2du24, d4ry2du24;
-
         public float steerInput;
 
     }
@@ -133,13 +126,6 @@ public class CalculationManager : MonoBehaviour
 
         bsplineGeometry = new BsplineGeometry();
 
-        // psFinder = new PsFinder(vehicleRobotState, trajectoryGenerator, bsplineGeometry, vehicleRobotParms);
-
-        // pathKinematics = new PathKinematics();
-
-        // vehicleKinematics  = new VehicleKinematics(
-
-        // );
     }
     
     
@@ -204,7 +190,6 @@ public class CalculationManager : MonoBehaviour
     {
         if (sim.isSimulationRunning)
         {
-            // dt = Time.deltaTime;
             dt = 0.01f;
 
             PerformCalculationStep(dt);
@@ -214,17 +199,12 @@ public class CalculationManager : MonoBehaviour
         if(sim.enableDebugOutput)
         {
             debugNp = cpQueue.GetNp();
-            // debugNf = cpQueue.GetNf();
             debugNs = cpSmooth.GetNsm();
             debugN = trajectoryGenerator.GetN();
 
-            // debugMergedPoints = cpQueue.GetMergedPointsManaged();
             debugResampledPoints = cpResample.GetResampledPointsManaged(trajectoryGenerator.resampledNative);
-            // debugResampledPoints2 = cpResample.GetResampledPointsManaged(trajectoryGenerator.resampled2Native);
             debugSmoothedPoints = cpSmooth.GetSmoothedPointsManaged();
             debugPastPoints   = cpQueue.GetPastPointsManaged();
-            // debugFuturePoints = cpQueue.GetFuturePointsManaged();
-            // debugPoints = bsplineGeometry.GetPointsManaged();
         }
     }
     
@@ -241,25 +221,16 @@ public class CalculationManager : MonoBehaviour
 
         if (sim.currentStep >= sim.totalSteps)
         {
-            // Debug.Log("シミュレーション計算終了");
+            Debug.Log("シミュレーション計算終了");
             sim.EndSimulation();
         }
 
         if (time >= sim.tMax)
         {
-            // Debug.Log($"timeがtMaxに到達しました。time:{time} q1:{q1}");
+            Debug.Log($"timeがtMaxに到達しました。time:{time}");
             sim.EndSimulation();
             return;
         }
-
-        // if(targetPointState.getTime() > 0.11f)
-        // {
-        //     Debug.Log($"10フレーム");
-        //     sim.EndSimulation();
-        //     return;
-        // };
-
-        // Debug.Log($"current.t:{targetPointState.getTime()}, current.s:{targetPointState.getS()}, current.v1:{targetPointState.getV1()}, current.x:{targetPointState.getX()}, current.s:{targetPointState.getY()}");
 
         // ここで入力の読み込みたい
         targetPointCtrl.ReadInput(); 
@@ -269,12 +240,6 @@ public class CalculationManager : MonoBehaviour
         //ここで曲線の生成
         // TrajectoryGeneratorクラス呼び出し
         trajectoryGenerator.GenerateBSplineCurve();
-
-        // if(targetPointState.getTime() > 30.01f)
-        // {
-        //     Debug.Log($"time:{time}");
-        //     sim.StopSimulation();
-        // };
 
         // ここにPs探索
         psFinder.StepPsFinder();
@@ -367,17 +332,6 @@ public class CalculationManager : MonoBehaviour
 
             data.steerInput = targetPointCtrl.GetSteerInput();
 
-
-            // data.d1rx2du21 = bsplineGeometry.GetD1Rx2du21();
-            // data.d1ry2du21 = bsplineGeometry.GetD1Ry2du21();
-            // data.d2rx2du22 = bsplineGeometry.GetD2Rx2du22();
-            // data.d2ry2du22 = bsplineGeometry.GetD2Ry2du22();
-            // data.d3rx2du23 = bsplineGeometry.GetD3Rx2du23();
-            // data.d3ry2du23 = bsplineGeometry.GetD3Ry2du23();
-            // data.d4rx2du24 = bsplineGeometry.GetD4Rx2du24();
-            // data.d4ry2du24 = bsplineGeometry.GetD4Ry2du24();
-
-            // データをバッファに追加
             AppendCsvLine(data);
 
             // 一定間隔でファイルに出力
@@ -471,7 +425,6 @@ public class CalculationManager : MonoBehaviour
     {
         if(sim.enableDebugOutput)
         {
-            // OutputCSV.WriteBSplineCurve(debugPastPoints, debugFuturePoints, debugMergedPoints, debugResampledPoints, debugSmoothedPoints, debugResampledPoints2, debugPoints, ds, targetPointState.getTime());
             OutputCSV.WriteBSplineCurve(
                 debugPastPoints, 
                 debugSmoothedPoints, 
